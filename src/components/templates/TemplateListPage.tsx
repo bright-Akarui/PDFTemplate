@@ -6,15 +6,12 @@ import { type FC } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, FileText } from "lucide-react";
 import TemplateCard from "./TemplateCard";
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useTemplates } from "@/hooks/use-templates";
 
 const TemplateListPage: FC = () => {
   const { templates, deleteTemplate } = useTemplates();
 
   return (
-    <DndProvider backend={HTML5Backend}>
       <div className="container mx-auto p-4 md:p-8">
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
           <div>
@@ -59,7 +56,6 @@ const TemplateListPage: FC = () => {
           )}
         </main>
       </div>
-    </DndProvider>
   );
 };
 

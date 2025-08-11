@@ -72,9 +72,8 @@ export const useTemplates = () => {
   };
   
   const getTemplate = useCallback((id: string): Template | null => {
-    if (!isLoaded) return null;
     return templates.find(t => t.id === id) || null;
-  }, [templates, isLoaded]);
+  }, [templates]);
 
   const saveTemplate = (templateData: Omit<Template, 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();

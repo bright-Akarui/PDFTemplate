@@ -3,8 +3,6 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import type { FC } from "react";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
 import { useRouter } from "next/navigation";
 import type { Template, TemplateElement, Field } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -117,8 +115,12 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
     const newElement: TemplateElement = {
       id: `el-${Date.now()}`,
       type,
-      content: type === 'text' ? 'New Text' : 'Image Placeholder',
-      style,
+      content: type === 'text' ? 'New Text' : 'https://placehold.co/100x50.png',
+      style: {
+        ...style,
+        width: type === 'image' ? '100px' : 'auto',
+        height: type === 'image' ? '50px' : 'auto',
+      },
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedElementId(newElement.id);
@@ -157,7 +159,6 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
   };
   
   return (
-    <DndProvider backend={HTML5Backend}>
       <div className="flex h-screen w-full flex-col bg-muted/40">
         <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
           <div className="flex items-center gap-4">
@@ -225,7 +226,6 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
           </div>
         </main>
       </div>
-    </DndProvider>
   );
 };
 
