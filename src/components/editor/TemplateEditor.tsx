@@ -19,7 +19,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTemplates } from "@/hooks/use-templates";
 
 interface TemplateEditorProps {
-  initialData: Template | null;
+  initialData: Template;
+  isNewTemplate: boolean;
 }
 
 const generateHtmlForTemplate = (template: Partial<Template>): string => {
@@ -67,18 +68,18 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
     `
   }
 
-const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
+const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { saveTemplate } = useTemplates();
+  const { saveTemplate, getTemplate } = useTemplates();
 
-  const [name, setName] = useState(initialData?.name || "New Template");
-  const [fields, setFields] = useState<Field[]>(initialData?.fields || []);
-  const [elements, setElements] = useState<TemplateElement[]>(initialData?.elements || []);
+  const [name, setName] = useState(initialData.name);
+  const [fields, setFields] = useState<Field[]>(initialData.fields);
+  const [elements, setElements] = useState<TemplateElement[]>(initialData.elements);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   
   const initialHtml = useMemo(() => {
-    if (initialData?.htmlContent) {
+    if (initialData.htmlContent) {
         return initialData.htmlContent;
     }
     return generateHtmlForTemplate({...(initialData || {}), name, fields, elements});
@@ -86,6 +87,14 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
   
   const [htmlContent, setHtmlContent] = useState(initialHtml);
   const [activeTab, setActiveTab] = useState("visual");
+  
+  // When initialData changes, update the state
+  useEffect(() => {
+    setName(initialData.name);
+    setFields(initialData.fields);
+    setElements(initialData.elements);
+    setHtmlContent(initialData.htmlContent || generateHtmlForTemplate({ ...initialData, name: initialData.name, fields: initialData.fields, elements: initialData.elements }));
+  }, [initialData]);
 
   // This effect ensures that if we switch to the code tab, the htmlContent state is up-to-date
   // with any changes made in the visual editor.
@@ -103,7 +112,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
     const generatedHtml = generateHtmlForTemplate({ name, fields, elements });
 
     return {
-      id: initialData?.id || `t-${Date.now()}`,
+      id: initialData.id,
       name,
       fields,
       elements: isCodeEditing ? [] : elements, // If editing code, we don't save the visual elements
@@ -147,6 +156,10 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
   
   const handleSave = () => {
     const templateToSave = getCurrentTemplateState();
+    
+    // Check if it's a new template being saved for the first time
+    const existingTemplate = getTemplate(templateToSave.id);
+
     saveTemplate(templateToSave);
     
     toast({
@@ -154,8 +167,15 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
       description: `Template "${templateToSave.name}" has been successfully saved.`,
       variant: "default",
     });
-    router.push("/");
-    router.refresh(); // To ensure the list page re-fetches data
+
+    if (isNewTemplate) {
+        // After saving a new template, we don't want to be in "new" mode anymore
+        // So we push to the new ID's edit page.
+        router.push(`/editor/${templateToSave.id}`);
+    } else {
+        router.push("/");
+    }
+    router.refresh();
   };
   
   return (
