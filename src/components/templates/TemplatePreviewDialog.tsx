@@ -31,16 +31,11 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     setFormData((prev) => ({ ...prev, [fieldName]: value }))
   }
 
-  const generatePreviewHtml = (htmlContent: string) => {
-    let populatedHtml = htmlContent
-    Object.entries(formData).forEach(([key, value]) => {
-      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g")
-      populatedHtml = populatedHtml.replace(regex, value || `{{${key}}}`)
-    })
-    return populatedHtml
-  }
-
   const generatedHtmlForSave = useMemo(() => {
+    if (template.htmlContent) {
+      return template.htmlContent;
+    }
+    
     if (!template.elements) return ""
 
     const elementsHtml = template.elements
@@ -63,14 +58,38 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
       .join("\n")
 
     return `
-      <div style="position: relative; width: 210mm; height: 297mm; background: white; margin: auto;">
-        ${elementsHtml}
-      </div>
+      <html>
+        <head>
+          <style>
+            body { font-family: sans-serif; }
+            .template-container { 
+              position: relative; 
+              width: 210mm; 
+              height: 297mm; 
+              background: white; 
+              margin: auto; 
+              box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+          </style>
+        </head>
+        <body>
+          <div class="template-container">
+            ${elementsHtml}
+          </div>
+        </body>
+      </html>
     `
-  }, [template.elements, template.fields])
+  }, [template])
 
 
-  const finalHtml = generatePreviewHtml(generatedHtmlForSave)
+  const finalHtml = useMemo(() => {
+    let populatedHtml = generatedHtmlForSave;
+    Object.entries(formData).forEach(([key, value]) => {
+      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g")
+      populatedHtml = populatedHtml.replace(regex, value || `{{${key}}}`)
+    });
+    return populatedHtml;
+  }, [generatedHtmlForSave, formData]);
 
   return (
     <Dialog>
@@ -107,7 +126,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
               srcDoc={finalHtml}
               title="Template Preview"
               className="w-full h-full border-0"
-              sandbox="allow-same-origin"
+              sandbox="allow-same-origin allow-scripts"
             />
           </div>
         </div>

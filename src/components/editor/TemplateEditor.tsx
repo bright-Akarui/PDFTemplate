@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { FC } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -9,16 +9,63 @@ import type { Template, TemplateElement, Field } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Eye, Save } from "lucide-react";
+import { ArrowLeft, Eye, Save, Code } from "lucide-react";
 import EditorToolbar from "./EditorToolbar";
 import FieldsManager from "./FieldsManager";
 import EditorCanvas from "./EditorCanvas";
 import PropertiesPanel from "./PropertiesPanel";
 import { TemplatePreviewDialog } from "@/components/templates/TemplatePreviewDialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 
 interface TemplateEditorProps {
   initialData: Template | null;
 }
+
+const generateHtmlForTemplate = (template: Template): string => {
+    if (!template.elements) return ""
+
+    const elementsHtml = template.elements
+      .map((el) => {
+        const styleString = Object.entries(el.style)
+          .map(([key, value]) => `${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}: ${value};`)
+          .join(" ")
+        
+        const content = el.fieldId
+          ? `{{${template.fields.find(f => f.id === el.fieldId)?.name || ''}}}`
+          : el.content;
+
+        if (el.type === 'image') {
+          const src = el.fieldId ? `{{${template.fields.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
+          return `<img src="${src}" alt="${el.content}" style="${styleString}" />`
+        }
+        
+        return `<div style="${styleString}">${content}</div>`
+      })
+      .join("\n")
+
+    return `<html>
+  <head>
+    <style>
+      body { font-family: sans-serif; }
+      .template-container { 
+        position: relative; 
+        width: 210mm; 
+        height: 297mm; 
+        background: white; 
+        margin: auto; 
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="template-container">
+      ${elementsHtml}
+    </div>
+  </body>
+</html>
+    `
+  }
 
 const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
   const router = useRouter();
@@ -27,6 +74,17 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
   const [fields, setFields] = useState<Field[]>(initialData?.fields || []);
   const [elements, setElements] = useState<TemplateElement[]>(initialData?.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  
+  const initialHtml = useMemo(() => {
+    if (initialData?.htmlContent) {
+        return initialData.htmlContent;
+    }
+    return generateHtmlForTemplate({...(initialData || {id: 'new', name, fields, elements, createdAt: '', updatedAt: ''}), name, fields, elements});
+  }, [initialData, name, fields, elements]);
+  
+  const [htmlContent, setHtmlContent] = useState(initialHtml);
+  const [activeTab, setActiveTab] = useState("visual");
+
 
   const selectedElement = elements.find((el) => el.id === selectedElementId) || null;
   const fullTemplate = {
@@ -34,10 +92,11 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
       name,
       fields,
       elements,
+      htmlContent: activeTab === 'code' ? htmlContent : generateHtmlForTemplate({id: 'new', name, fields, elements, createdAt: '', updatedAt: ''}),
       createdAt: initialData?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
   }
-
+  
   const addElement = useCallback((type: 'text' | 'image', style: React.CSSProperties) => {
     const newElement: TemplateElement = {
       id: `el-${Date.now()}`,
@@ -67,10 +126,11 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
       setSelectedElementId(null);
     }
   }, [selectedElementId]);
-
+  
   const handleSave = () => {
-    // In a real app, this would call an API
-    console.log("Saving template:", { name, fields, elements });
+    const finalHtml = activeTab === 'code' ? htmlContent : generateHtmlForTemplate(fullTemplate);
+
+    console.log("Saving template:", { name, fields, elements, htmlContent: finalHtml });
     toast({
       title: "Template Saved!",
       description: `Template "${name}" has been successfully saved.`,
@@ -78,6 +138,13 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
     });
     router.push("/");
   };
+  
+  const handleTabChange = (value: string) => {
+    if (value === 'code') {
+      setHtmlContent(generateHtmlForTemplate(fullTemplate));
+    }
+    setActiveTab(value);
+  }
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -113,15 +180,29 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData }) => {
           </div>
 
           {/* Center Panel */}
-          <div className="flex items-center justify-center overflow-auto bg-background rounded-lg border p-4">
-             <EditorCanvas
-                elements={elements}
-                onDropElement={addElement}
-                onSelectElement={setSelectedElementId}
-                onUpdateElementStyle={updateElementStyle}
-                selectedElementId={selectedElementId}
-              />
-          </div>
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-col overflow-auto bg-background rounded-lg border p-4">
+              <TabsList className="self-center mb-4">
+                <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+                <TabsTrigger value="code">Code Editor</TabsTrigger>
+              </TabsList>
+              <TabsContent value="visual" className="flex-grow flex items-center justify-center overflow-auto">
+                <EditorCanvas
+                  elements={elements}
+                  onDropElement={addElement}
+                  onSelectElement={setSelectedElementId}
+                  onUpdateElementStyle={updateElementStyle}
+                  selectedElementId={selectedElementId}
+                />
+              </TabsContent>
+               <TabsContent value="code" className="flex-grow flex flex-col">
+                <Textarea
+                    value={htmlContent}
+                    onChange={(e) => setHtmlContent(e.target.value)}
+                    className="flex-grow w-full h-full font-mono text-xs"
+                    placeholder="Enter your HTML and CSS here..."
+                />
+            </TabsContent>
+          </Tabs>
 
           {/* Right Panel */}
           <div className="bg-background rounded-lg border p-4 overflow-y-auto">
