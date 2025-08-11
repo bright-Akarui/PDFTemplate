@@ -7,13 +7,16 @@ import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { useMemo } from "react";
 import type { Template } from "@/lib/types";
+import { useParams } from "next/navigation";
 
-export default function EditorPage({ params }: { params: { id: string } }) {
+export default function EditorPage() {
+  const params = useParams();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { getTemplate, isLoaded } = useTemplates();
   
   const template = useMemo(() => {
     if (!isLoaded) return undefined;
-    if (params.id === 'new') {
+    if (id === 'new') {
         // Return a new template structure, but don't save it yet.
         return {
             id: `t-${Date.now()}`,
@@ -25,8 +28,8 @@ export default function EditorPage({ params }: { params: { id: string } }) {
             updatedAt: new Date().toISOString(),
         } as Template;
     }
-    return getTemplate(params.id);
-  }, [params.id, getTemplate, isLoaded]);
+    return getTemplate(id);
+  }, [id, getTemplate, isLoaded]);
 
   if (!isLoaded) {
     return (
@@ -46,7 +49,7 @@ export default function EditorPage({ params }: { params: { id: string } }) {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <TemplateEditor initialData={template} isNewTemplate={params.id === 'new'} />
+      <TemplateEditor initialData={template} isNewTemplate={id === 'new'} />
     </DndProvider>
   )
 }
