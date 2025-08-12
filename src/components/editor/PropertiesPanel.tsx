@@ -98,38 +98,79 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
             </div>
         )}
 
-        <div className="space-y-2">
-            <Label>Styling</Label>
+        <div className="space-y-4 border-t pt-4">
+            <Label className="font-semibold">Styling</Label>
+            
             {element.type === 'text' && (
-                <div className="grid grid-cols-2 gap-2">
-                    <Input 
-                        type="number"
-                        value={parseInt(element.style.fontSize as string) || 16}
-                        onChange={e => handleStyleChange('fontSize', `${e.target.value}px`)}
-                        placeholder="Font Size"
-                    />
-                    <Input 
-                        type="text"
-                        value={element.style.color as string || '#000000'}
-                        onChange={e => handleStyleChange('color', e.target.value)}
-                        placeholder="Color"
-                    />
+                <div className="space-y-2">
+                    <Label className="text-xs">Typography</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Input 
+                            type="number"
+                            value={parseInt(element.style.fontSize as string) || 16}
+                            onChange={e => handleStyleChange('fontSize', `${e.target.value}px`)}
+                            placeholder="Font Size"
+                            aria-label="Font Size"
+                        />
+                        <Input 
+                            type="text"
+                            value={element.style.color as string || '#000000'}
+                            onChange={e => handleStyleChange('color', e.target.value)}
+                            placeholder="Color"
+                             aria-label="Color"
+                        />
+                    </div>
                 </div>
             )}
-             <div className="grid grid-cols-2 gap-2">
-                <Input
-                    type="text"
-                    value={parseInt(element.style.width as string) || "auto"}
-                    onChange={e => handleStyleChange('width', `${e.target.value}px`)}
-                    placeholder="Width (px)"
-                    disabled={element.type === 'table'}
-                />
-                <Input
-                    type="text"
-                    value={parseInt(element.style.height as string) || "auto"}
-                    onChange={e => handleStyleChange('height', `${e.target.value}px`)}
-                    placeholder="Height (px)"
-                />
+            
+            <div className="space-y-2">
+                <Label className="text-xs">Sizing</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                    <Input
+                        type="number"
+                        value={parseInt(element.style.width as string) || ''}
+                        onChange={e => handleStyleChange('width', `${e.target.value}px`)}
+                        placeholder="Width (px)"
+                        aria-label="Width"
+                        disabled={element.type === 'table'}
+                    />
+                    <Input
+                        type="number"
+                        value={parseInt(element.style.height as string) || ''}
+                        onChange={e => handleStyleChange('height', `${e.target.value}px`)}
+                        placeholder="Height (px)"
+                        aria-label="Height"
+                    />
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <Label className="text-xs">Border</Label>
+                <div className="grid grid-cols-3 gap-2">
+                     <Input 
+                        type="number"
+                        value={parseInt(element.style.borderWidth as string) || 0}
+                        onChange={e => handleStyleChange('borderWidth', `${e.target.value}px`)}
+                        placeholder="Width (px)"
+                        aria-label="Border Width"
+                    />
+                     <Select onValueChange={(value) => handleStyleChange('borderStyle', value)} defaultValue={element.style.borderStyle || 'none'}>
+                        <SelectTrigger aria-label="Border Style"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="solid">Solid</SelectItem>
+                            <SelectItem value="dashed">Dashed</SelectItem>
+                            <SelectItem value="dotted">Dotted</SelectItem>
+                        </SelectContent>
+                    </Select>
+                     <Input 
+                        type="text"
+                        value={element.style.borderColor as string || '#000000'}
+                        onChange={e => handleStyleChange('borderColor', e.target.value)}
+                        placeholder="Color"
+                        aria-label="Border Color"
+                    />
+                </div>
             </div>
         </div>
 
@@ -139,5 +180,3 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
 };
 
 export default PropertiesPanel;
-
-    
