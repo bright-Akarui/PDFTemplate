@@ -37,6 +37,16 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
   const handleStyleChange = (prop: keyof React.CSSProperties, value: string) => {
     onUpdate(element.id, { style: { ...element.style, [prop]: value } });
   };
+
+  const handlePositioningChange = (prop: keyof React.CSSProperties, value: string) => {
+    const newStyle = { ...element.style, [prop]: value ? `${value}px` : undefined };
+    // To avoid conflicts, if top is set, remove bottom, and vice-versa. Same for left/right.
+    if (prop === 'top' && value) delete newStyle.bottom;
+    if (prop === 'bottom' && value) delete newStyle.top;
+    if (prop === 'left' && value) delete newStyle.right;
+    if (prop === 'right' && value) delete newStyle.left;
+    onUpdate(element.id, { style: newStyle });
+  }
   
   const handleContentChange = (value: string) => {
     onUpdate(element.id, { content: value });
@@ -123,6 +133,40 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
                 </div>
             )}
             
+            <div className="space-y-2">
+                <Label className="text-xs">Positioning</Label>
+                 <div className="grid grid-cols-2 gap-2">
+                    <Input
+                        type="number"
+                        value={parseInt(element.style.top as string) || ''}
+                        onChange={e => handlePositioningChange('top', e.target.value)}
+                        placeholder="Top (px)"
+                        aria-label="Top"
+                    />
+                     <Input
+                        type="number"
+                        value={parseInt(element.style.right as string) || ''}
+                        onChange={e => handlePositioningChange('right', e.target.value)}
+                        placeholder="Right (px)"
+                        aria-label="Right"
+                    />
+                    <Input
+                        type="number"
+                        value={parseInt(element.style.bottom as string) || ''}
+                        onChange={e => handlePositioningChange('bottom', e.target.value)}
+                        placeholder="Bottom (px)"
+                        aria-label="Bottom"
+                    />
+                    <Input
+                        type="number"
+                        value={parseInt(element.style.left as string) || ''}
+                        onChange={e => handlePositioningChange('left', e.target.value)}
+                        placeholder="Left (px)"
+                        aria-label="Left"
+                    />
+                </div>
+            </div>
+
             <div className="space-y-2">
                 <Label className="text-xs">Sizing</Label>
                  <div className="grid grid-cols-2 gap-2">
