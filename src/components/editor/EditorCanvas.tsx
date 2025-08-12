@@ -4,7 +4,7 @@
 import type { FC } from "react";
 import { useDrop } from "react-dnd";
 import type { CSSProperties } from "react";
-import type { TemplateElement } from "@/lib/types";
+import type { TemplateElement, Field } from "@/lib/types";
 import { ItemTypes } from "@/lib/dnd";
 import { cn } from "@/lib/utils";
 import CanvasElement from "./CanvasElement";
@@ -14,7 +14,8 @@ const A4_HEIGHT_PX = 1123;
 
 interface EditorCanvasProps {
   elements: TemplateElement[];
-  onDropElement: (type: 'text' | 'image', style: CSSProperties) => void;
+  fields: Field[];
+  onDropElement: (type: 'text' | 'image' | 'table', style: CSSProperties) => void;
   onSelectElement: (id: string | null) => void;
   onUpdateElementStyle: (id: string, newStyle: Partial<CSSProperties>) => void;
   selectedElementId: string | null;
@@ -22,14 +23,15 @@ interface EditorCanvasProps {
 
 const EditorCanvas: FC<EditorCanvasProps> = ({
   elements,
+  fields,
   onDropElement,
   onSelectElement,
   onUpdateElementStyle,
   selectedElementId,
 }) => {
   const [{ canDrop, isOver }, drop] = useDrop(() => ({
-    accept: [ItemTypes.TEXT, ItemTypes.IMAGE],
-    drop: (item: { type: 'text' | 'image' }, monitor) => {
+    accept: [ItemTypes.TEXT, ItemTypes.IMAGE, ItemTypes.TABLE],
+    drop: (item: { type: 'text' | 'image' | 'table' }, monitor) => {
       const delta = monitor.getClientOffset();
       const dropTarget = document.getElementById("editor-canvas-wrapper")?.getBoundingClientRect();
       const canvasEl = document.getElementById("editor-canvas");
@@ -38,7 +40,6 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
       const style = window.getComputedStyle(canvasEl);
       const matrix = new DOMMatrixReadOnly(style.transform);
       const scale = matrix.m11;
-
 
       if (delta && dropTarget) {
         const top = (delta.y - dropTarget.top) / scale;
@@ -79,6 +80,7 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
             <CanvasElement
             key={el.id}
             element={el}
+            fields={fields}
             isSelected={selectedElementId === el.id}
             onSelect={onSelectElement}
             onUpdateStyle={onUpdateElementStyle}
@@ -91,3 +93,5 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
 };
 
 export default EditorCanvas;
+
+    

@@ -24,40 +24,48 @@ interface TemplateEditorProps {
 }
 
 const generateHtmlForTemplate = (template: Partial<Template>): string => {
-    // If htmlContent already exists and we are not in visual editing mode, prefer it.
     if (template.htmlContent && !template.elements?.length) {
         return template.htmlContent;
     }
 
-    if (!template.elements) return ""
+    if (!template.elements) return "";
 
     const elementsHtml = template.elements
       .map((el) => {
         const styleString = Object.entries(el.style)
           .map(([key, value]) => `${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}: ${value};`)
-          .join(" ")
+          .join(" ");
         
-        const content = el.fieldId
-          ? `{{.${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}`
-          : el.content;
+        const dataAttrs = `data-id="${el.id}" data-type="${el.type}" data-field-id="${el.fieldId || ''}"`;
+
+        if (el.type === 'text') {
+            const content = el.fieldId ? `{{.${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
+            return `<div style="${styleString}" ${dataAttrs}>${content}</div>`;
+        }
 
         if (el.type === 'image') {
           const src = el.fieldId ? `{{.${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
-          return `<img src="${src}" alt="${el.content}" style="${styleString}" data-id="${el.id}" data-type="image" data-field-id="${el.fieldId || ''}" />`
+          return `<img src="${src}" alt="${el.content}" style="${styleString}" ${dataAttrs} />`;
         }
-        
-        return `<div style="${styleString}" data-id="${el.id}" data-type="text" data-field-id="${el.fieldId || ''}">${content}</div>`
+
+        if (el.type === 'table' && el.fieldId) {
+            const field = template.fields?.find(f => f.id === el.fieldId);
+            if (!field || field.type !== 'table' || !field.itemSchema) return '';
+
+            const headers = field.itemSchema.map(col => `<th>${col.name}</th>`).join('');
+            const cells = field.itemSchema.map(col => `<td>{{.${col.name}}}</td>`).join('');
+            
+            const tableHtml = `<table style="${styleString}" ${dataAttrs}>
+                <thead><tr>${headers}</tr></thead>
+                <tbody>{{range .${field.name}}}<tr>${cells}</tr>{{end}}</tbody>
+              </table>`;
+            
+            return tableHtml;
+        }
+
+        return '';
       })
-      .join("\n")
-    
-    // Preserve range blocks if they exist in the original htmlContent
-    const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
-    const existingHtml = template.htmlContent || '';
-    let rangeBlocks = '';
-    let match;
-    while ((match = rangeRegex.exec(existingHtml)) !== null) {
-      rangeBlocks += match[0];
-    }
+      .join("\n");
 
     return `<html>
   <head>
@@ -71,21 +79,18 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
         margin: auto; 
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
       }
-      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      table { width: 100%; border-collapse: collapse; }
       th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
       th { background-color: #f2f2f2; }
-      ul { padding-left: 20px; }
     </style>
   </head>
   <body>
     <div class="template-container">
       ${elementsHtml}
-      ${rangeBlocks}
     </div>
   </body>
-</html>
-    `
-  }
+</html>`;
+}
   
 const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] => {
   if (typeof window === 'undefined' || !html) return [];
@@ -93,8 +98,6 @@ const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] =
   const doc = parser.parseFromString(html, 'text/html');
   const parsedElements: TemplateElement[] = [];
 
-  // This will select only elements that are direct children of the container,
-  // effectively ignoring anything inside a potential range block for visual editing.
   doc.querySelectorAll('.template-container > [data-id]').forEach(node => {
     const el = node as HTMLElement;
     const style: CSSProperties = {};
@@ -104,19 +107,18 @@ const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] =
         style[camelCaseName as keyof CSSProperties] = el.style.getPropertyValue(propName);
     }
     
-    const fieldId = el.dataset.fieldId;
-    let content = el.innerHTML;
-    
-    // For visual representation, we don't show the {{.FieldName}} syntax
-    if (el.tagName.toLowerCase() === 'img') {
-        content = (el as HTMLImageElement).alt;
-    } else {
+    let content = '';
+    const type = (el.dataset.type as 'text' | 'image' | 'table') || 'text';
+
+    if (type === 'text') {
         content = el.innerHTML;
+    } else if (type === 'image') {
+        content = (el as HTMLImageElement).alt;
     }
 
     parsedElements.push({
       id: el.dataset.id || `el-${Date.now()}`,
-      type: (el.dataset.type as 'text' | 'image') || 'text',
+      type: type,
       content: content,
       style: style,
       fieldId: el.dataset.fieldId || undefined,
@@ -143,12 +145,13 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   
   useEffect(() => {
     setName(initialData.name);
-    setFields(initialData.fields || []);
+    const initialFields = initialData.fields || [];
+    setFields(initialFields);
     
-    const initialHtml = initialData.htmlContent || generateHtmlForTemplate({ ...initialData, fields: initialData.fields || [] });
+    const initialHtml = initialData.htmlContent || generateHtmlForTemplate({ ...initialData, fields: initialFields });
     setHtmlContent(initialHtml);
     
-    const initialElements = parseHtmlToElements(initialHtml, initialData.fields || []);
+    const initialElements = parseHtmlToElements(initialHtml, initialFields);
     setElements(initialElements);
 
     setIsInitializing(false);
@@ -158,11 +161,10 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     if (isInitializing) return;
     
     if (activeTab === 'visual' && value === 'code') {
-      // visual -> code
-      const generatedHtml = generateHtmlForTemplate({ name, fields, elements, htmlContent });
+      const currentTemplateState = { name, fields, elements, htmlContent: '' };
+      const generatedHtml = generateHtmlForTemplate(currentTemplateState);
       setHtmlContent(generatedHtml);
     } else if (activeTab === 'code' && value === 'visual') {
-      // code -> visual
       const newElements = parseHtmlToElements(htmlContent, fields);
       setElements(newElements);
     }
@@ -185,7 +187,8 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
         finalElements = parseHtmlToElements(htmlContent, fields);
     } else {
         finalElements = elements;
-        generatedHtml = generateHtmlForTemplate({ name, fields, elements, htmlContent });
+        const stateForHtmlGen = { name, fields, elements, htmlContent: '' };
+        generatedHtml = generateHtmlForTemplate(stateForHtmlGen);
     }
 
     return {
@@ -197,17 +200,17 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     }
   }
 
-  const addElement = useCallback((type: 'text' | 'image', style: React.CSSProperties) => {
+  const addElement = useCallback((type: 'text' | 'image' | 'table', style: React.CSSProperties) => {
     const newElement: TemplateElement = {
       id: `el-${Date.now()}`,
       type,
-      content: type === 'text' ? 'New Text' : 'https://placehold.co/100x50.png',
+      content: type === 'text' ? 'New Text' : type === 'image' ? 'https://placehold.co/100x50.png' : '',
       style: {
         ...style,
-        width: type === 'image' ? '100px' : 'auto',
-        height: type === 'image' ? '50px' : 'auto',
         fontSize: '16px',
-        color: '#000000'
+        color: '#000000',
+        ...(type === 'image' && { width: '100px', height: '50px' }),
+        ...(type === 'table' && { width: '100%', height: 'auto' }),
       },
     };
     setElements((prev) => [...prev, newElement]);
@@ -295,6 +298,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                    <div className="flex-grow p-4 mx-auto w-full h-full flex items-start justify-center">
                       <EditorCanvas
                         elements={elements}
+                        fields={fields}
                         onDropElement={addElement}
                         onSelectElement={setSelectedElementId}
                         onUpdateElementStyle={updateElementStyle}
@@ -327,3 +331,5 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
 };
 
 export default TemplateEditor;
+
+    

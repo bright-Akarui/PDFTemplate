@@ -1,3 +1,4 @@
+
 import type { CSSProperties } from 'react';
 
 export interface SubField {
@@ -15,8 +16,8 @@ export interface Field {
 
 export interface TemplateElement {
   id: string;
-  type: 'text' | 'image';
-  content: string; // for text content or image placeholder text
+  type: 'text' | 'image' | 'table';
+  content: string; // for text content or image placeholder text/alt
   fieldId?: string; // link to a field
   style: CSSProperties;
 }
@@ -30,3 +31,5 @@ export interface Template {
   createdAt: string;
   updatedAt: string;
 }
+
+    
