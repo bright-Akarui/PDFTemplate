@@ -82,21 +82,21 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           </div>
         </header>
 
-        <main className="flex-1 p-4 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
-            <div className="lg:col-span-3 flex flex-col min-h-0 bg-background rounded-lg border">
-                <Textarea
-                    value={htmlContent}
-                    onChange={(e) => setHtmlContent(e.target.value)}
-                    className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea p-4"
-                    placeholder="Enter your HTML and CSS here..."
-                />
-            </div>
+        <main className="flex flex-col lg:flex-row flex-1 p-4 gap-4 overflow-hidden">
+          {/* Code Editor */}
+          <div className="flex flex-col h-[40vh] lg:h-full lg:w-3/4 bg-background rounded-lg border">
+            <Textarea
+              value={htmlContent}
+              onChange={(e) => setHtmlContent(e.target.value)}
+              className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea p-4"
+              placeholder="Enter your HTML and CSS here..."
+            />
+          </div>
 
-            <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
-              <div className="overflow-y-auto rounded-lg border bg-background h-full">
-                <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
-              </div>
+          {/* Fields Manager */}
+          <div className="flex flex-col flex-1 lg:w-1/4 min-h-0">
+            <div className="overflow-y-auto rounded-lg border bg-background h-full">
+              <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
             </div>
           </div>
         </main>
