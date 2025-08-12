@@ -132,7 +132,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                 width: '794px',
                 height: '1123px',
                 transform: 'scale(0.4)',
-                transformOrigin: 'top center',
+                transformOrigin: 'center center',
               }}
             >
               <iframe
