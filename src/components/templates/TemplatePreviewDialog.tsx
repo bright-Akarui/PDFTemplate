@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useMemo } from "react"
@@ -61,7 +62,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
       <html>
         <head>
           <style>
-            body { font-family: sans-serif; }
+            body { font-family: sans-serif; margin: 0; }
             .template-container { 
               position: relative; 
               width: 210mm; 
@@ -121,11 +122,12 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
               ))}
             </div>
           </div>
-          <div className="md:col-span-2 border rounded-lg overflow-hidden">
+          <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center">
             <iframe
               srcDoc={finalHtml}
               title="Template Preview"
-              className="w-full h-full border-0"
+              className="w-[794px] h-[1123px] border-0 bg-white shadow-lg"
+              style={{ transform: 'scale(0.4)', transformOrigin: 'center' }}
               sandbox="allow-same-origin allow-scripts"
             />
           </div>
