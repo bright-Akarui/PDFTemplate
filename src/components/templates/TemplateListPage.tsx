@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { type FC } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, FileText } from "lucide-react";
+import { FileText, LayoutTemplate, Code2 } from "lucide-react";
 import TemplateCard from "./TemplateCard";
 import { useTemplates } from "@/hooks/use-templates";
 
@@ -12,20 +12,28 @@ const TemplateListPage: FC = () => {
   const { templates, deleteTemplate } = useTemplates();
 
   return (
-      <div className="container mx-auto p-4 md:p-8">
+      <div className="container mx-auto">
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-primary">TemplateFlow</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-primary">Your Templates</h1>
             <p className="text-muted-foreground mt-1">
-              Manage your document templates here.
+              Manage, edit, or create new document templates.
             </p>
           </div>
-          <Link href="/editor/new" passHref>
-            <Button className="mt-4 sm:mt-0">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Template
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2 mt-4 sm:mt-0">
+            <Link href="/editor/designer/new" passHref>
+              <Button>
+                <LayoutTemplate className="mr-2 h-4 w-4" />
+                New Designer Template
+              </Button>
+            </Link>
+             <Link href="/editor/code/new" passHref>
+              <Button variant="secondary">
+                <Code2 className="mr-2 h-4 w-4" />
+                New Code Template
+              </Button>
+            </Link>
+          </div>
         </header>
 
         <main>
@@ -46,12 +54,20 @@ const TemplateListPage: FC = () => {
               <p className="mt-1 text-sm text-muted-foreground">
                 Get started by creating a new template.
               </p>
-              <Link href="/editor/new" passHref className="mt-6">
-                <Button>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Create Template
-                </Button>
-              </Link>
+              <div className="flex justify-center items-center gap-2 mt-6">
+                <Link href="/editor/designer/new" passHref>
+                  <Button>
+                    <LayoutTemplate className="mr-2 h-4 w-4" />
+                    Create Designer Template
+                  </Button>
+                </Link>
+                 <Link href="/editor/code/new" passHref>
+                  <Button variant="secondary">
+                    <Code2 className="mr-2 h-4 w-4" />
+                    Create Code Template
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </main>

@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -29,7 +31,14 @@ export default function RootLayout({
           inter.variable
         )}
       >
-        {children}
+        <SidebarProvider>
+          <div className="flex">
+            <AppSidebar />
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
+        </SidebarProvider>
         <Toaster />
       </body>
     </html>

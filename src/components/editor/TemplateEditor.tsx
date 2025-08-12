@@ -20,6 +20,7 @@ import { useTemplates } from "@/hooks/use-templates";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Label } from "../ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { cn } from "@/lib/utils";
 
 const PageStyling: FC<{
   style: CSSProperties;
@@ -190,7 +191,7 @@ const parseHtmlToElements = (html: string, fields: Field[]): { elements: Templat
 };
 
 
-const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = ({ initialData, isNewTemplate }) => {
+const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editorType: 'designer' | 'code' }> = ({ initialData, isNewTemplate, editorType }) => {
   const router = useRouter();
   const { toast } = useToast();
   const { saveTemplate } = useTemplates();
@@ -202,7 +203,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
   
   const [containerStyle, setContainerStyle] = useState<CSSProperties>(initialData.containerStyle || {});
   const [htmlContent, setHtmlContent] = useState('');
-  const [activeTab, setActiveTab] = useState("visual");
+  const [activeTab, setActiveTab] = useState(editorType === 'designer' ? "visual" : "code");
   const [isInitializing, setIsInitializing] = useState(true);
   
   useEffect(() => {
@@ -216,9 +217,15 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
     const { elements: initialElements, containerStyle: initialContainerStyle } = parseHtmlToElements(initialHtml, initialFields);
     setElements(initialElements);
     setContainerStyle(initialContainerStyle);
+    
+    if (editorType === 'code') {
+      setActiveTab('code');
+    } else {
+      setActiveTab('visual');
+    }
 
     setIsInitializing(false);
-  }, [initialData]);
+  }, [initialData, editorType]);
 
   const handleTabChange = (value: string) => {
     if (isInitializing) return;
@@ -317,7 +324,8 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
     });
 
     if (isNewTemplate) {
-        router.push(`/editor/${templateToSave.id}`);
+        const newPath = editorType === 'designer' ? `/editor/designer/${templateToSave.id}` : `/editor/code/${templateToSave.id}`;
+        router.push(newPath);
     } else {
         router.push("/");
     }
@@ -349,18 +357,24 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           </div>
         </header>
 
-        <main className="grid flex-1 gap-4 overflow-hidden p-4 grid-cols-[320px_1fr_300px]">
-          <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2">
-            <EditorToolbar />
+        <main className={cn(
+          "grid flex-1 gap-4 overflow-hidden p-4",
+           editorType === 'designer' ? "grid-cols-[320px_1fr_300px]" : "grid-cols-[320px_1fr]"
+        )}>
+          <div className={cn(
+            "flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2",
+            editorType === 'code' && "col-span-1"
+          )}>
+            {editorType === 'designer' && <EditorToolbar />}
             <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
-            <PageStyling style={containerStyle} setStyle={setContainerStyle} />
+            {editorType === 'designer' && <PageStyling style={containerStyle} setStyle={setContainerStyle} />}
           </div>
 
           <div className="flex flex-col overflow-hidden bg-background rounded-lg border">
              <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-grow flex-col">
                 <div className="flex justify-center p-2 border-b">
                     <TabsList>
-                      <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+                      <TabsTrigger value="visual" disabled={editorType === 'code'}>Visual Editor</TabsTrigger>
                       <TabsTrigger value="code">Code Editor</TabsTrigger>
                     </TabsList>
                 </div>
@@ -388,7 +402,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
             </Tabs>
           </div>
           
-          <div className="overflow-y-auto rounded-lg border bg-background p-2">
+          <div className={cn("overflow-y-auto rounded-lg border bg-background p-2", editorType === 'code' && "hidden")}>
              <PropertiesPanel
                 element={selectedElement}
                 fields={fields}

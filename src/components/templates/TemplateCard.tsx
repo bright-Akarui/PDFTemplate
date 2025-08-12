@@ -17,6 +17,9 @@ interface TemplateCardProps {
 
 const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
   const lastUpdated = new Date(template.updatedAt).toLocaleDateString();
+  const hasVisualElements = template.elements && template.elements.length > 0;
+  const editUrl = hasVisualElements ? `/editor/designer/${template.id}` : `/editor/code/${template.id}`;
+
 
   return (
     <Card className="flex flex-col transition-shadow duration-300 hover:shadow-lg">
@@ -31,7 +34,7 @@ const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
-                <Link href={`/editor/${template.id}`}>
+                <Link href={editUrl}>
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </Link>
@@ -59,7 +62,7 @@ const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
               Preview
             </Button>
         </TemplatePreviewDialog>
-        <Link href={`/editor/${template.id}`} passHref>
+        <Link href={editUrl} passHref>
           <Button>
             <Edit className="mr-2 h-4 w-4" />
             Edit
