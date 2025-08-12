@@ -41,7 +41,8 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
         try {
           return { ...prev, [fieldName]: JSON.parse(value) };
         } catch {
-          return { ...prev, [fieldName]: [] };
+          // If parsing fails, keep the raw string value to allow user to fix it.
+          return { ...prev, [fieldName]: value };
         }
       }
       return { ...prev, [fieldName]: value };
@@ -102,7 +103,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   const finalHtml = useMemo(() => {
     let populatedHtml = generatedHtmlForSave;
     
-    // Handle {{range}} blocks first
+    // Handle {{range .Items}} blocks first
     const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
     populatedHtml = populatedHtml.replace(rangeRegex, (match, arrayName, content) => {
         const items = formData[arrayName.trim()] as any[];
@@ -110,6 +111,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
 
         return items.map(item => {
             let itemContent = content;
+            // Replace item properties like {{.Name}}, {{.Qty}}
             Object.keys(item).forEach(key => {
                 const itemRegex = new RegExp(`\\{\\{\\.${key}\\}\\}`, 'g');
                 itemContent = itemContent.replace(itemRegex, item[key]);
@@ -119,7 +121,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     });
 
 
-    // Handle simple {{.field}} replacements
+    // Handle simple {{.field}} replacements for non-object values
     Object.entries(formData).forEach(([key, value]) => {
       if (typeof value !== 'object') {
         const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
