@@ -82,19 +82,19 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           </div>
         </header>
 
-        <main className="flex flex-col lg:flex-row flex-1 p-4 gap-4 overflow-hidden">
+        <main className="flex-1 p-4 grid grid-rows-2 lg:grid-rows-1 lg:grid-cols-4 gap-4 overflow-hidden">
           {/* Code Editor */}
-          <div className="flex flex-col h-full lg:w-3/4 bg-background rounded-lg border">
+          <div className="row-span-1 lg:col-span-3 bg-background rounded-lg border flex flex-col min-h-0">
             <Textarea
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
-              className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-4"
+              className="flex-1 w-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-4"
               placeholder="Enter your HTML and CSS here..."
             />
           </div>
 
           {/* Fields Manager */}
-          <div className="flex flex-col flex-1 lg:w-1/4 min-h-0">
+          <div className="row-span-1 lg:col-span-1 min-h-0">
             <div className="overflow-y-auto rounded-lg border bg-background h-full">
               <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
             </div>
