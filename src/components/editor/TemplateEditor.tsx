@@ -180,7 +180,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   
   return (
       <div className="flex h-screen w-full flex-col bg-muted/40">
-        <header className="flex h-16 items-center justify-between border-b bg-background px-4 lg:px-6">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 lg:px-6">
           <div className="flex items-center gap-4">
             <Button variant="outline" size="icon" onClick={() => router.push('/')}>
                 <ArrowLeft className="h-4 w-4" />
@@ -203,40 +203,42 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           </div>
         </header>
 
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr_300px] gap-2 p-2 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr_300px] gap-4 p-4 overflow-hidden">
           {/* Left Panel */}
-          <div className="flex flex-col gap-2 bg-background rounded-lg border p-2 overflow-y-auto">
+          <div className="flex flex-col gap-4 bg-background rounded-lg border overflow-y-auto">
             <EditorToolbar />
             <FieldsManager fields={fields} setFields={setFields} />
           </div>
 
           {/* Center Panel */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col overflow-auto bg-background rounded-lg border p-4">
-              <TabsList className="self-center mb-4">
-                <TabsTrigger value="visual">Visual Editor</TabsTrigger>
-                <TabsTrigger value="code">Code Editor</TabsTrigger>
-              </TabsList>
-              <TabsContent value="visual" className="flex-grow flex items-center justify-center overflow-auto">
-                <EditorCanvas
-                  elements={elements}
-                  onDropElement={addElement}
-                  onSelectElement={setSelectedElementId}
-                  onUpdateElementStyle={updateElementStyle}
-                  selectedElementId={selectedElementId}
-                />
+          <div className="flex flex-col bg-background rounded-lg border overflow-hidden">
+             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-grow">
+                <TabsList className="shrink-0 self-center my-2">
+                  <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+                  <TabsTrigger value="code">Code Editor</TabsTrigger>
+                </TabsList>
+                <TabsContent value="visual" className="flex-grow flex items-start justify-center overflow-auto p-4">
+                  <EditorCanvas
+                    elements={elements}
+                    onDropElement={addElement}
+                    onSelectElement={setSelectedElementId}
+                    onUpdateElementStyle={updateElementStyle}
+                    selectedElementId={selectedElementId}
+                  />
+                </TabsContent>
+                 <TabsContent value="code" className="flex-grow flex flex-col p-2">
+                  <Textarea
+                      value={htmlContent}
+                      onChange={(e) => setHtmlContent(e.target.value)}
+                      className="flex-grow w-full h-full font-mono text-xs resize-none"
+                      placeholder="Enter your HTML and CSS here..."
+                  />
               </TabsContent>
-               <TabsContent value="code" className="flex-grow flex flex-col">
-                <Textarea
-                    value={htmlContent}
-                    onChange={(e) => setHtmlContent(e.target.value)}
-                    className="flex-grow w-full h-full font-mono text-xs"
-                    placeholder="Enter your HTML and CSS here..."
-                />
-            </TabsContent>
-          </Tabs>
-
+            </Tabs>
+          </div>
+          
           {/* Right Panel */}
-          <div className="bg-background rounded-lg border p-4 overflow-y-auto">
+          <div className="bg-background rounded-lg border overflow-y-auto">
              <PropertiesPanel
                 element={selectedElement}
                 fields={fields}
@@ -244,7 +246,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                 onDelete={deleteElement}
               />
           </div>
-        </main>
+        </div>
       </div>
   );
 };
