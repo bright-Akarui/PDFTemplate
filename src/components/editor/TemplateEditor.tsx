@@ -129,6 +129,8 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
         ...style,
         width: type === 'image' ? '100px' : 'auto',
         height: type === 'image' ? '50px' : 'auto',
+        fontSize: '16px',
+        color: '#000000'
       },
     };
     setElements((prev) => [...prev, newElement]);
