@@ -113,107 +113,140 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
             
             {element.type === 'text' && (
                 <div className="space-y-2">
-                    <Label className="text-xs">Typography</Label>
+                    <Label className="text-xs font-medium">Typography</Label>
                     <div className="grid grid-cols-2 gap-2">
-                        <Input 
-                            type="number"
-                            value={parseInt(element.style.fontSize as string) || 16}
-                            onChange={e => handleStyleChange('fontSize', `${e.target.value}px`)}
-                            placeholder="Font Size"
-                            aria-label="Font Size"
-                        />
-                        <Input 
-                            type="text"
-                            value={element.style.color as string || '#000000'}
-                            onChange={e => handleStyleChange('color', e.target.value)}
-                            placeholder="Color"
-                             aria-label="Color"
-                        />
+                        <div>
+                            <Label htmlFor="fontSize" className="text-xs text-muted-foreground">Font Size</Label>
+                            <Input
+                                id="fontSize"
+                                type="number"
+                                value={parseInt(element.style.fontSize as string) || 16}
+                                onChange={e => handleStyleChange('fontSize', `${e.target.value}px`)}
+                                placeholder="16"
+                            />
+                        </div>
+                         <div>
+                            <Label htmlFor="color" className="text-xs text-muted-foreground">Color</Label>
+                            <Input
+                                id="color"
+                                type="text"
+                                value={element.style.color as string || '#000000'}
+                                onChange={e => handleStyleChange('color', e.target.value)}
+                                placeholder="#000000"
+                            />
+                        </div>
                     </div>
                 </div>
             )}
             
             <div className="space-y-2">
-                <Label className="text-xs">Positioning</Label>
+                <Label className="text-xs font-medium">Positioning</Label>
                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                        type="number"
-                        value={parseInt(element.style.top as string) || ''}
-                        onChange={e => handlePositioningChange('top', e.target.value)}
-                        placeholder="Top (px)"
-                        aria-label="Top"
-                    />
-                     <Input
-                        type="number"
-                        value={parseInt(element.style.right as string) || ''}
-                        onChange={e => handlePositioningChange('right', e.target.value)}
-                        placeholder="Right (px)"
-                        aria-label="Right"
-                    />
-                    <Input
-                        type="number"
-                        value={parseInt(element.style.bottom as string) || ''}
-                        onChange={e => handlePositioningChange('bottom', e.target.value)}
-                        placeholder="Bottom (px)"
-                        aria-label="Bottom"
-                    />
-                    <Input
-                        type="number"
-                        value={parseInt(element.style.left as string) || ''}
-                        onChange={e => handlePositioningChange('left', e.target.value)}
-                        placeholder="Left (px)"
-                        aria-label="Left"
-                    />
+                    <div>
+                        <Label htmlFor="top" className="text-xs text-muted-foreground">Top (px)</Label>
+                        <Input
+                            id="top"
+                            type="number"
+                            value={parseInt(element.style.top as string) || ''}
+                            onChange={e => handlePositioningChange('top', e.target.value)}
+                            placeholder="auto"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="right" className="text-xs text-muted-foreground">Right (px)</Label>
+                        <Input
+                            id="right"
+                            type="number"
+                            value={parseInt(element.style.right as string) || ''}
+                            onChange={e => handlePositioningChange('right', e.target.value)}
+                            placeholder="auto"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="bottom" className="text-xs text-muted-foreground">Bottom (px)</Label>
+                        <Input
+                            id="bottom"
+                            type="number"
+                            value={parseInt(element.style.bottom as string) || ''}
+                            onChange={e => handlePositioningChange('bottom', e.target.value)}
+                            placeholder="auto"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="left" className="text-xs text-muted-foreground">Left (px)</Label>
+                        <Input
+                            id="left"
+                            type="number"
+                            value={parseInt(element.style.left as string) || ''}
+                            onChange={e => handlePositioningChange('left', e.target.value)}
+                            placeholder="auto"
+                        />
+                    </div>
                 </div>
             </div>
 
             <div className="space-y-2">
-                <Label className="text-xs">Sizing</Label>
+                <Label className="text-xs font-medium">Sizing</Label>
                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                        type="number"
-                        value={parseInt(element.style.width as string) || ''}
-                        onChange={e => handleStyleChange('width', `${e.target.value}px`)}
-                        placeholder="Width (px)"
-                        aria-label="Width"
-                        disabled={element.type === 'table'}
-                    />
-                    <Input
-                        type="number"
-                        value={parseInt(element.style.height as string) || ''}
-                        onChange={e => handleStyleChange('height', `${e.target.value}px`)}
-                        placeholder="Height (px)"
-                        aria-label="Height"
-                    />
+                    <div>
+                       <Label htmlFor="width" className="text-xs text-muted-foreground">Width (px)</Label>
+                        <Input
+                            id="width"
+                            type="number"
+                            value={parseInt(element.style.width as string) || ''}
+                            onChange={e => handleStyleChange('width', `${e.target.value}px`)}
+                            placeholder="auto"
+                            disabled={element.type === 'table'}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="height" className="text-xs text-muted-foreground">Height (px)</Label>
+                        <Input
+                            id="height"
+                            type="number"
+                            value={parseInt(element.style.height as string) || ''}
+                            onChange={e => handleStyleChange('height', `${e.target.value}px`)}
+                            placeholder="auto"
+                        />
+                    </div>
                 </div>
             </div>
 
             <div className="space-y-2">
-                <Label className="text-xs">Border</Label>
+                <Label className="text-xs font-medium">Border</Label>
                 <div className="grid grid-cols-3 gap-2">
-                     <Input 
-                        type="number"
-                        value={parseInt(element.style.borderWidth as string) || 0}
-                        onChange={e => handleStyleChange('borderWidth', `${e.target.value}px`)}
-                        placeholder="Width (px)"
-                        aria-label="Border Width"
-                    />
-                     <Select onValueChange={(value) => handleStyleChange('borderStyle', value)} defaultValue={element.style.borderStyle || 'none'}>
-                        <SelectTrigger aria-label="Border Style"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="solid">Solid</SelectItem>
-                            <SelectItem value="dashed">Dashed</SelectItem>
-                            <SelectItem value="dotted">Dotted</SelectItem>
-                        </SelectContent>
-                    </Select>
-                     <Input 
-                        type="text"
-                        value={element.style.borderColor as string || '#000000'}
-                        onChange={e => handleStyleChange('borderColor', e.target.value)}
-                        placeholder="Color"
-                        aria-label="Border Color"
-                    />
+                    <div>
+                        <Label htmlFor="borderWidth" className="text-xs text-muted-foreground">Width</Label>
+                        <Input
+                            id="borderWidth"
+                            type="number"
+                            value={parseInt(element.style.borderWidth as string) || 0}
+                            onChange={e => handleStyleChange('borderWidth', `${e.target.value}px`)}
+                            placeholder="0"
+                        />
+                    </div>
+                    <div className="col-span-2">
+                        <Label htmlFor="borderStyle" className="text-xs text-muted-foreground">Style</Label>
+                        <Select onValueChange={(value) => handleStyleChange('borderStyle', value)} defaultValue={element.style.borderStyle || 'none'} name="borderStyle">
+                            <SelectTrigger id="borderStyle"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">None</SelectItem>
+                                <SelectItem value="solid">Solid</SelectItem>
+                                <SelectItem value="dashed">Dashed</SelectItem>
+                                <SelectItem value="dotted">Dotted</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="col-span-3">
+                        <Label htmlFor="borderColor" className="text-xs text-muted-foreground">Color</Label>
+                         <Input
+                            id="borderColor"
+                            type="text"
+                            value={element.style.borderColor as string || '#000000'}
+                            onChange={e => handleStyleChange('borderColor', e.target.value)}
+                            placeholder="#000000"
+                        />
+                    </div>
                 </div>
             </div>
         </div>
