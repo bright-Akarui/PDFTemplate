@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from "react";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Settings2 } from "lucide-react";
+import { Trash2, Settings2, MousePointerSquare } from "lucide-react";
 
 interface PropertiesPanelProps {
   element: TemplateElement | null;
@@ -20,12 +21,14 @@ interface PropertiesPanelProps {
 const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, onDelete }) => {
   if (!element) {
     return (
-      <Card className="h-full">
+      <Card className="h-full border-0 shadow-none">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Settings2 /> Properties</CardTitle>
+          <CardTitle className="flex items-center gap-2 text-base font-semibold"><Settings2 /> Properties</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground h-1/2">
-            <p>Select an element on the canvas to edit its properties.</p>
+            <MousePointerSquare className="w-10 h-10 mb-4" />
+            <p className="font-medium">Select an element</p>
+            <p className="text-sm">Click an element on the canvas to edit its properties.</p>
         </CardContent>
       </Card>
     );
@@ -44,9 +47,9 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
   };
 
   return (
-    <Card>
+    <Card className="border-0 shadow-none">
       <CardHeader>
-        <CardTitle className="capitalize flex justify-between items-center">
+        <CardTitle className="capitalize flex justify-between items-center text-base font-semibold">
           <span>{element.type} Properties</span>
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onDelete(element.id)}>
               <Trash2 className="w-4 h-4 text-destructive"/>

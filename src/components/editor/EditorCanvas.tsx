@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from "react";
@@ -54,7 +55,7 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
         if (e.target === e.currentTarget) onSelectElement(null);
       }}
       className={cn(
-        "relative bg-white shadow-lg overflow-hidden transform scale-90 origin-top",
+        "relative bg-white shadow-lg overflow-hidden transform scale-90 origin-center mx-auto",
         "transition-all duration-200",
         isActive ? 'outline-dashed outline-2 outline-offset-4 outline-primary' : '',
         canDrop ? 'bg-primary/5' : ''

@@ -3,7 +3,7 @@
 
 import type { FC } from "react";
 import { useDrag } from "react-dnd";
-import { Text, Image as ImageIcon } from "lucide-react";
+import { Type, Image as ImageIcon } from "lucide-react";
 import { ItemTypes } from "@/lib/dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -14,7 +14,7 @@ interface DraggableItemProps {
 
 const DraggableToolbarItem: FC<DraggableItemProps> = ({ type, children }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
-    type: type === 'text' ? ItemTypes.TEXT : ItemTypes.IMAGE,
+    type: type,
     item: { type },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
@@ -39,11 +39,11 @@ const EditorToolbar: FC = () => {
         <CardTitle>Toolbox</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <DraggableToolbarItem type="text">
-          <Text className="w-5 h-5 text-primary" />
+        <DraggableToolbarItem type={ItemTypes.TEXT}>
+          <Type className="w-5 h-5 text-primary" />
           <span className="font-medium">Text</span>
         </DraggableToolbarItem>
-        <DraggableToolbarItem type="image">
+        <DraggableToolbarItem type={ItemTypes.IMAGE}>
           <ImageIcon className="w-5 h-5 text-primary" />
           <span className="font-medium">Image</span>
         </DraggableToolbarItem>

@@ -88,7 +88,6 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   const [htmlContent, setHtmlContent] = useState(initialHtml);
   const [activeTab, setActiveTab] = useState("visual");
   
-  // When initialData changes, update the state
   useEffect(() => {
     setName(initialData.name);
     setFields(initialData.fields || []);
@@ -96,8 +95,6 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     setHtmlContent(initialData.htmlContent || generateHtmlForTemplate({ ...initialData, name: initialData.name, fields: initialData.fields, elements: initialData.elements }));
   }, [initialData]);
 
-  // This effect ensures that if we switch to the code tab, the htmlContent state is up-to-date
-  // with any changes made in the visual editor.
   useEffect(() => {
     if (activeTab === 'code') {
       setHtmlContent(generateHtmlForTemplate({ name, fields, elements }));
@@ -115,7 +112,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
       id: initialData.id,
       name,
       fields,
-      elements: isCodeEditing ? [] : elements, // If editing code, we don't save the visual elements
+      elements: isCodeEditing ? [] : elements, 
       htmlContent: isCodeEditing ? htmlContent : generatedHtml,
     }
   }
@@ -159,9 +156,6 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   const handleSave = () => {
     const templateToSave = getCurrentTemplateState();
     
-    // Check if it's a new template being saved for the first time
-    const existingTemplate = getTemplate(templateToSave.id);
-
     saveTemplate(templateToSave);
     
     toast({
@@ -171,8 +165,6 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     });
 
     if (isNewTemplate) {
-        // After saving a new template, we don't want to be in "new" mode anymore
-        // So we push to the new ID's edit page.
         router.push(`/editor/${templateToSave.id}`);
     } else {
         router.push("/");
@@ -205,21 +197,21 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           </div>
         </header>
 
-        <div className="grid flex-1 gap-4 overflow-hidden p-4 md:grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr_300px]">
-          {/* Left Panel */}
-          <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background">
+        <main className="grid flex-1 gap-4 overflow-hidden p-4 grid-cols-[280px_1fr_300px]">
+          <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2">
             <EditorToolbar />
             <FieldsManager fields={fields} setFields={setFields} />
           </div>
 
-          {/* Center Panel */}
-          <div className="flex flex-col overflow-hidden rounded-lg border bg-background">
+          <div className="flex flex-col overflow-hidden">
              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-grow flex-col">
-                <TabsList className="shrink-0 self-center my-2">
-                  <TabsTrigger value="visual">Visual Editor</TabsTrigger>
-                  <TabsTrigger value="code">Code Editor</TabsTrigger>
-                </TabsList>
-                <TabsContent value="visual" className="flex flex-grow items-start justify-center overflow-auto p-4">
+                <div className="flex justify-center p-2 bg-muted/40 rounded-t-lg">
+                    <TabsList>
+                      <TabsTrigger value="visual">Visual Editor</TabsTrigger>
+                      <TabsTrigger value="code">Code Editor</TabsTrigger>
+                    </TabsList>
+                </div>
+                <TabsContent value="visual" className="flex flex-grow items-start justify-center overflow-auto p-4 bg-muted/60 rounded-b-lg">
                   <EditorCanvas
                     elements={elements}
                     onDropElement={addElement}
@@ -228,19 +220,18 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                     selectedElementId={selectedElementId}
                   />
                 </TabsContent>
-                 <TabsContent value="code" className="flex-grow flex flex-col p-2">
+                 <TabsContent value="code" className="flex-grow flex flex-col p-2 bg-background rounded-b-lg border">
                   <Textarea
                       value={htmlContent}
                       onChange={(e) => setHtmlContent(e.target.value)}
-                      className="flex-grow w-full h-full resize-none font-mono text-xs"
+                      className="flex-grow w-full h-full resize-none font-mono text-xs border-0 focus-visible:ring-0"
                       placeholder="Enter your HTML and CSS here..."
                   />
               </TabsContent>
             </Tabs>
           </div>
           
-          {/* Right Panel */}
-          <div className="overflow-y-auto rounded-lg border bg-background">
+          <div className="overflow-y-auto rounded-lg border bg-background p-2">
              <PropertiesPanel
                 element={selectedElement}
                 fields={fields}
@@ -248,7 +239,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                 onDelete={deleteElement}
               />
           </div>
-        </div>
+        </main>
       </div>
   );
 };
