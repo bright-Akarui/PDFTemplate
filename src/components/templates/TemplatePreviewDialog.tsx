@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import type { Template } from "@/lib/types"
+import type { Template, Field } from "@/lib/types"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Printer } from "lucide-react"
@@ -23,6 +23,107 @@ interface TemplatePreviewDialogProps {
   children: React.ReactNode
 }
 
+const ITEMS_PER_PAGE = 15; // Adjust as needed for A4 layout
+
+const generatePagedHtml = (templateHtml: string, formData: Record<string, any>, fields: Field[]): string => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(templateHtml, 'text/html');
+  const body = doc.body;
+
+  const tableField = fields.find(f => f.type === 'table');
+  const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
+  
+  let pagedHtml = '';
+  
+  // Find the table and its template row
+  const tableMatch = templateHtml.match(rangeRegex);
+  
+  if (!tableField || !tableMatch) {
+    // No table field or range block, just do simple replacement
+    let populatedHtml = templateHtml;
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value !== 'object' || value === null) {
+        const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
+        populatedHtml = populatedHtml.replace(regex, String(value ?? ""));
+      }
+    });
+    return populatedHtml;
+  }
+  
+  const arrayName = tableField.name;
+  const items = formData[arrayName] as any[];
+
+  if (!Array.isArray(items) || items.length === 0) {
+     // Clear the range block if no items
+    const finalHtml = templateHtml.replace(rangeRegex, '');
+    return finalHtml;
+  }
+  
+  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+
+  for (let page = 1; page <= totalPages; page++) {
+    const pageItems = items.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+    
+    // Clone the original body for each page
+    const pageBody = body.cloneNode(true) as HTMLElement;
+
+    // Simple placeholder replacement for non-table fields
+    let pageHtml = pageBody.innerHTML;
+    Object.entries(formData).forEach(([key, value]) => {
+      if (key !== arrayName) {
+        const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
+        pageHtml = pageHtml.replace(regex, String(value ?? ""));
+      }
+    });
+
+    // Replace table content
+    pageHtml = pageHtml.replace(rangeRegex, (match, _, content) => {
+        return pageItems.map(item => {
+            let itemContent = content;
+            Object.keys(item).forEach(key => {
+                const itemRegex = new RegExp(`\\{\\{\\.${key}\\}\\}`, 'g');
+                itemContent = itemContent.replace(itemRegex, item[key]);
+            });
+            return itemContent;
+        }).join('');
+    });
+
+    // Wrap in A4 page container
+    pagedHtml += `<div class="page">${pageHtml}</div>`;
+  }
+  
+  // Reconstruct the full HTML document with styles and paged body
+  const finalDoc = `
+    <html>
+      <head>
+        ${doc.head.innerHTML}
+        <style>
+            @media print {
+              body { margin: 0; }
+              .page { 
+                page-break-after: always; 
+                page-break-inside: avoid;
+              }
+            }
+            .page {
+                width: 210mm;
+                min-height: 297mm;
+                background: white;
+                margin: 20px auto;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+                box-sizing: border-box;
+                position: relative;
+            }
+        </style>
+      </head>
+      <body>${pagedHtml}</body>
+    </html>
+  `;
+  
+  return finalDoc;
+};
+
+
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -31,7 +132,6 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     setFormData(template.fields.reduce((acc, field) => {
       if (field.type === 'table') {
         try {
-          // Ensure sampleValue is a string before parsing
           const sample = typeof field.sampleValue === 'string' ? field.sampleValue : '[]';
           acc[field.name] = JSON.parse(sample);
         } catch {
@@ -50,8 +150,6 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
         try {
           return { ...prev, [fieldName]: JSON.parse(value) };
         } catch {
-          // If parsing fails, keep the raw string value to allow user to fix it.
-          // This is useful for letting the user correct syntax errors in the textarea.
           return { ...prev, [fieldName]: value };
         }
       }
@@ -60,44 +158,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   };
 
   const finalHtml = useMemo(() => {
-    let populatedHtml = template.htmlContent || '';
-    
-    // Handle {{range .Items}} blocks first
-    const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
-    populatedHtml = populatedHtml.replace(rangeRegex, (match, arrayName, content) => {
-        const items = formData[arrayName.trim()] as any[];
-        if (!Array.isArray(items)) {
-          console.warn(`Template Warning: Field "${arrayName.trim()}" is not an array for range.`);
-          return ''; // Return empty string if data is not an array
-        }
-
-        return items.map(item => {
-            let itemContent = content;
-            // Replace item properties like {{.Name}}, {{.Qty}}
-            Object.keys(item).forEach(key => {
-                const itemRegex = new RegExp(`\\{\\{\\.${key}\\}\\}`, 'g');
-                itemContent = itemContent.replace(itemRegex, item[key]);
-            });
-            return itemContent;
-        }).join('');
-    });
-
-
-    // Handle simple {{.field}} replacements for non-object values
-    Object.entries(formData).forEach(([key, value]) => {
-      if (typeof value !== 'object' || value === null) {
-        const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
-        populatedHtml = populatedHtml.replace(regex, String(value ?? ""));
-      }
-    });
-
-    return populatedHtml;
-  }, [template.htmlContent, formData]);
+    if (!template.htmlContent) return '';
+    return generatePagedHtml(template.htmlContent, formData, template.fields);
+  }, [template.htmlContent, formData, template.fields]);
 
   const handlePrint = () => {
     const iframe = iframeRef.current;
     if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.focus(); // Required for some browsers
+      iframe.contentWindow.focus(); 
       iframe.contentWindow.print();
     }
   };
@@ -109,7 +177,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
         <DialogHeader>
           <DialogTitle>Preview: {template.name}</DialogTitle>
           <DialogDescription>
-            Fill in the sample data to see a live preview of your template.
+            Fill in the sample data to see a live preview of your template. Pagination is applied automatically.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow min-h-0">
@@ -148,10 +216,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
           </div>
           <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center p-4">
              <div
-              className="w-full h-full"
-              style={{
-                aspectRatio: '210 / 297',
-              }}
+              className="w-full h-full bg-gray-400 overflow-y-auto"
             >
               <iframe
                 ref={iframeRef}
@@ -159,13 +224,10 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                 title="Template Preview"
                 className="w-full h-full border-0 bg-white shadow-lg"
                 style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  transform: 'scale(1)',
-                  transformOrigin: 'center center'
+                  transform: 'scale(0.9)', 
+                  transformOrigin: 'top center'
                 }}
-                sandbox="allow-same-origin allow-scripts allow-modals"
+                sandbox="allow-same-origin allow-modals"
               />
             </div>
           </div>
