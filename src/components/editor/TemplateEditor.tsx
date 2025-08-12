@@ -84,11 +84,11 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
 
         <main className="flex flex-col lg:flex-row flex-1 p-4 gap-4 overflow-hidden">
           {/* Code Editor */}
-          <div className="flex flex-col h-[40vh] lg:h-full lg:w-3/4 bg-background rounded-lg border">
+          <div className="flex flex-col h-full lg:w-3/4 bg-background rounded-lg border">
             <Textarea
               value={htmlContent}
               onChange={(e) => setHtmlContent(e.target.value)}
-              className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea p-4"
+              className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 p-4"
               placeholder="Enter your HTML and CSS here..."
             />
           </div>
