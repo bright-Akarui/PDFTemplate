@@ -15,7 +15,7 @@ export interface Field {
 }
 
 export interface TemplateElement {
-  id: string;
+  id:string;
   type: 'text' | 'image' | 'table';
   content: string; // for text content or image placeholder text/alt
   fieldId?: string; // link to a field
@@ -30,6 +30,5 @@ export interface Template {
   htmlContent?: string; // Stored for saving
   createdAt: string;
   updatedAt: string;
+  containerStyle?: CSSProperties;
 }
-
-    

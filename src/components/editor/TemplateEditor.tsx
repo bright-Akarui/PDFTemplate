@@ -8,7 +8,7 @@ import type { Template, TemplateElement, Field, CSSProperties } from "@/lib/type
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Eye, Save } from "lucide-react";
+import { ArrowLeft, Eye, Save, Settings } from "lucide-react";
 import EditorToolbar from "./EditorToolbar";
 import FieldsManager from "./FieldsManager";
 import EditorCanvas from "./EditorCanvas";
@@ -17,14 +17,59 @@ import { TemplatePreviewDialog } from "@/components/templates/TemplatePreviewDia
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useTemplates } from "@/hooks/use-templates";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
-interface TemplateEditorProps {
-  initialData: Template;
-  isNewTemplate: boolean;
+const PageStyling: FC<{
+  style: CSSProperties;
+  setStyle: (style: CSSProperties) => void;
+}> = ({ style, setStyle }) => {
+  
+  const handleStyleChange = (prop: keyof React.CSSProperties, value: string) => {
+    setStyle({ ...style, [prop]: value });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Page Styling</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Label className="font-semibold">Container Border</Label>
+        <div className="grid grid-cols-3 gap-2">
+            <Input 
+              type="number"
+              value={parseInt(style.borderWidth as string) || 0}
+              onChange={e => handleStyleChange('borderWidth', `${e.target.value}px`)}
+              placeholder="Width (px)"
+              aria-label="Border Width"
+          />
+            <Select onValueChange={(value) => handleStyleChange('borderStyle', value)} defaultValue={style.borderStyle || 'none'}>
+              <SelectTrigger aria-label="Border Style"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="solid">Solid</SelectItem>
+                  <SelectItem value="dashed">Dashed</SelectItem>
+                  <SelectItem value="dotted">Dotted</SelectItem>
+              </SelectContent>
+          </Select>
+            <Input 
+              type="text"
+              value={style.borderColor as string || '#000000'}
+              onChange={e => handleStyleChange('borderColor', e.target.value)}
+              placeholder="Color"
+              aria-label="Border Color"
+          />
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
+
 const generateHtmlForTemplate = (template: Partial<Template>): string => {
-    if (template.htmlContent && !template.elements?.length) {
+    if (template.htmlContent && !template.elements?.length && !template.containerStyle) {
         return template.htmlContent;
     }
 
@@ -66,6 +111,10 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
         return '';
       })
       .join("\n");
+    
+    const containerStyleString = template.containerStyle ? Object.entries(template.containerStyle)
+      .map(([key, value]) => `${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}: ${value};`)
+      .join(" ") : '';
 
     return `<html>
   <head>
@@ -78,6 +127,7 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
         background: white; 
         margin: auto; 
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        box-sizing: border-box; /* Important for border */
       }
       table { width: 100%; border-collapse: collapse; }
       th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -85,15 +135,15 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
     </style>
   </head>
   <body>
-    <div class="template-container">
+    <div class="template-container" style="${containerStyleString}">
       ${elementsHtml}
     </div>
   </body>
 </html>`;
 }
   
-const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] => {
-  if (typeof window === 'undefined' || !html) return [];
+const parseHtmlToElements = (html: string, fields: Field[]): { elements: TemplateElement[], containerStyle: CSSProperties } => {
+  if (typeof window === 'undefined' || !html) return { elements: [], containerStyle: {} };
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const parsedElements: TemplateElement[] = [];
@@ -125,11 +175,22 @@ const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] =
     });
   });
 
-  return parsedElements;
+  const containerEl = doc.querySelector('.template-container') as HTMLElement;
+  const containerStyle: CSSProperties = {};
+  if (containerEl) {
+     for (let i = 0; i < containerEl.style.length; i++) {
+        const propName = containerEl.style[i];
+        const camelCaseName = propName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        containerStyle[camelCaseName as keyof CSSProperties] = containerEl.style.getPropertyValue(propName);
+    }
+  }
+
+
+  return { elements: parsedElements, containerStyle };
 };
 
 
-const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate }) => {
+const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = ({ initialData, isNewTemplate }) => {
   const router = useRouter();
   const { toast } = useToast();
   const { saveTemplate } = useTemplates();
@@ -139,6 +200,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   const [elements, setElements] = useState<TemplateElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   
+  const [containerStyle, setContainerStyle] = useState<CSSProperties>(initialData.containerStyle || {});
   const [htmlContent, setHtmlContent] = useState('');
   const [activeTab, setActiveTab] = useState("visual");
   const [isInitializing, setIsInitializing] = useState(true);
@@ -151,8 +213,9 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     const initialHtml = initialData.htmlContent || generateHtmlForTemplate({ ...initialData, fields: initialFields });
     setHtmlContent(initialHtml);
     
-    const initialElements = parseHtmlToElements(initialHtml, initialFields);
+    const { elements: initialElements, containerStyle: initialContainerStyle } = parseHtmlToElements(initialHtml, initialFields);
     setElements(initialElements);
+    setContainerStyle(initialContainerStyle);
 
     setIsInitializing(false);
   }, [initialData]);
@@ -161,12 +224,13 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     if (isInitializing) return;
     
     if (activeTab === 'visual' && value === 'code') {
-      const currentTemplateState = { name, fields, elements, htmlContent: '' };
+      const currentTemplateState = { name, fields, elements, htmlContent: '', containerStyle };
       const generatedHtml = generateHtmlForTemplate(currentTemplateState);
       setHtmlContent(generatedHtml);
     } else if (activeTab === 'code' && value === 'visual') {
-      const newElements = parseHtmlToElements(htmlContent, fields);
+      const { elements: newElements, containerStyle: newContainerStyle } = parseHtmlToElements(htmlContent, fields);
       setElements(newElements);
+      setContainerStyle(newContainerStyle);
     }
     setActiveTab(value);
   }
@@ -181,13 +245,17 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     
     let finalElements: TemplateElement[];
     let generatedHtml: string;
+    let finalContainerStyle: CSSProperties;
 
     if (isCodeEditing) {
         generatedHtml = htmlContent;
-        finalElements = parseHtmlToElements(htmlContent, fields);
+        const parsed = parseHtmlToElements(htmlContent, fields);
+        finalElements = parsed.elements;
+        finalContainerStyle = parsed.containerStyle;
     } else {
         finalElements = elements;
-        const stateForHtmlGen = { name, fields, elements, htmlContent: '' };
+        finalContainerStyle = containerStyle;
+        const stateForHtmlGen = { name, fields, elements, htmlContent: '', containerStyle };
         generatedHtml = generateHtmlForTemplate(stateForHtmlGen);
     }
 
@@ -197,6 +265,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
       fields,
       elements: finalElements, 
       htmlContent: generatedHtml,
+      containerStyle: finalContainerStyle
     }
   }
 
@@ -284,6 +353,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2">
             <EditorToolbar />
             <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
+            <PageStyling style={containerStyle} setStyle={setContainerStyle} />
           </div>
 
           <div className="flex flex-col overflow-hidden bg-background rounded-lg border">
@@ -299,6 +369,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                       <EditorCanvas
                         elements={elements}
                         fields={fields}
+                        containerStyle={containerStyle}
                         onDropElement={addElement}
                         onSelectElement={setSelectedElementId}
                         onUpdateElementStyle={updateElementStyle}
@@ -331,5 +402,3 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
 };
 
 export default TemplateEditor;
-
-    

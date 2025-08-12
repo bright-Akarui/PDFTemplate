@@ -15,6 +15,7 @@ const A4_HEIGHT_PX = 1123;
 interface EditorCanvasProps {
   elements: TemplateElement[];
   fields: Field[];
+  containerStyle: CSSProperties;
   onDropElement: (type: 'text' | 'image' | 'table', style: CSSProperties) => void;
   onSelectElement: (id: string | null) => void;
   onUpdateElementStyle: (id: string, newStyle: Partial<CSSProperties>) => void;
@@ -24,6 +25,7 @@ interface EditorCanvasProps {
 const EditorCanvas: FC<EditorCanvasProps> = ({
   elements,
   fields,
+  containerStyle,
   onDropElement,
   onSelectElement,
   onUpdateElementStyle,
@@ -74,6 +76,8 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
                 height: `${A4_HEIGHT_PX}px`,
                 transform: `scale(var(--canvas-scale, 0.75))`,
                 transformOrigin: 'top center',
+                boxSizing: 'border-box',
+                ...containerStyle
             }}
         >
         {elements.map((el) => (
@@ -93,5 +97,3 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
 };
 
 export default EditorCanvas;
-
-    
