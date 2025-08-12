@@ -165,7 +165,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                   transform: 'scale(1)',
                   transformOrigin: 'center center'
                 }}
-                sandbox="allow-same-origin allow-scripts"
+                sandbox="allow-same-origin allow-scripts allow-modals"
               />
             </div>
           </div>
