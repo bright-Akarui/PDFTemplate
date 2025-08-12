@@ -1,10 +1,16 @@
 import type { CSSProperties } from 'react';
 
+export interface SubField {
+  id: string;
+  name: string;
+}
+
 export interface Field {
   id: string;
   name: string;
-  type: 'text' | 'number' | 'date' | 'image';
+  type: 'text' | 'number' | 'date' | 'image' | 'table';
   sampleValue: string;
+  itemSchema?: SubField[]; // For 'table' type
 }
 
 export interface TemplateElement {

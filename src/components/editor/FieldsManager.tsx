@@ -1,14 +1,15 @@
 "use client";
 
 import type { FC, Dispatch, SetStateAction } from "react";
-import type { Field } from "@/lib/types";
+import type { Field, SubField } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileJson2 } from "lucide-react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useFieldArray, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
@@ -16,19 +17,55 @@ const formSchema = z.object({
   fields: z.array(
     z.object({
       name: z.string().min(1, "Name is required"),
-      type: z.enum(["text", "number", "date", "image"]),
+      type: z.enum(["text", "number", "date", "image", "table"]),
       sampleValue: z.string().min(1, "Sample value is required"),
+      itemSchema: z.array(
+        z.object({
+          name: z.string().min(1, "Column name is required"),
+          id: z.string(),
+        })
+      ).optional(),
     })
   ),
 });
+
+type FormData = z.infer<typeof formSchema>;
 
 interface FieldsManagerProps {
   fields: Field[];
   setFields: Dispatch<SetStateAction<Field[]>>;
 }
 
+const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, control }) => {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `fields.${nestIndex}.itemSchema`
+    });
+
+    return (
+        <div className="space-y-2 mt-2 border-t pt-2">
+            <Label className="text-xs font-semibold">Table Columns</Label>
+            {fields.map((item, k) => (
+                <div key={item.id} className="flex items-center gap-2">
+                    <Controller
+                        name={`fields.${nestIndex}.itemSchema.${k}.name`}
+                        control={control}
+                        render={({ field }) => <Input {...field} placeholder="Column Name" className="h-8"/>}
+                    />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(k)}>
+                        <Trash2 className="w-4 h-4 text-destructive"/>
+                    </Button>
+                </div>
+            ))}
+            <Button size="sm" variant="outline" className="w-full h-8" onClick={() => append({ name: '', id: `sf-${Date.now()}` })}>
+                <Plus className="w-4 h-4 mr-2"/> Add Column
+            </Button>
+        </div>
+    )
+}
+
 const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
-  const { control, handleSubmit, watch } = useForm<{ fields: Omit<Field, 'id'>[] }>({
+  const { control, handleSubmit, watch, getValues } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: fields.map(({id, ...rest}) => rest) },
   });
@@ -38,11 +75,22 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
     name: "fields",
   });
   
+  const watchedFields = useWatch({ control, name: "fields" });
+
   watch((value) => {
-    const newFields: Field[] = (value.fields || []).map((f, i) => ({
-      id: fields[i]?.id || `f-${Date.now()}-${i}`,
-      ...f,
-    })) as Field[];
+    const newFields: Field[] = (value.fields || []).map((f, i) => {
+      const baseField = fields[i] || {};
+      const newItemSchema = (f?.itemSchema || []).map((sf, j) => ({
+          id: baseField.itemSchema?.[j]?.id || sf.id || `sf-${Date.now()}-${i}-${j}`,
+          name: sf.name,
+      }));
+
+      return {
+        id: baseField.id || `f-${Date.now()}-${i}`,
+        ...f,
+        itemSchema: newItemSchema
+      } as Field;
+    });
     setFields(newFields);
   });
   
@@ -78,12 +126,13 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
                     control={control}
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger><SelectValue /></SelectValue>
                         <SelectContent>
                           <SelectItem value="text">Text</SelectItem>
                           <SelectItem value="number">Number</SelectItem>
                           <SelectItem value="date">Date</SelectItem>
                           <SelectItem value="image">Image URL</SelectItem>
+                          <SelectItem value="table">Table (Array)</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -91,12 +140,21 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
               </div>
                <div>
                 <Label>Sample Value</Label>
-                <Controller
-                  name={`fields.${index}.sampleValue`}
-                  control={control}
-                  render={({ field }) => <Input {...field} placeholder="e.g., John Doe" />}
-                />
+                { getValues(`fields.${index}.type`) === 'table' ? (
+                     <Controller
+                        name={`fields.${index}.sampleValue`}
+                        control={control}
+                        render={({ field }) => <Textarea {...field} placeholder='e.g., [{"col": "value"}]' className="text-xs" rows={4} />}
+                     />
+                ) : (
+                    <Controller
+                      name={`fields.${index}.sampleValue`}
+                      control={control}
+                      render={({ field }) => <Input {...field} placeholder="e.g., John Doe" />}
+                    />
+                )}
               </div>
+              {watchedFields[index]?.type === 'table' && <TableField nestIndex={index} control={control} />}
             </div>
           )) : (
             <div className="text-center text-sm text-muted-foreground py-4">

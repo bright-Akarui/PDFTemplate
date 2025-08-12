@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
@@ -24,6 +23,11 @@ interface TemplateEditorProps {
 }
 
 const generateHtmlForTemplate = (template: Partial<Template>): string => {
+    // If htmlContent already exists and we are not in visual editing mode, prefer it.
+    if (template.htmlContent) {
+        return template.htmlContent;
+    }
+
     if (!template.elements) return ""
 
     const elementsHtml = template.elements
@@ -33,11 +37,11 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
           .join(" ")
         
         const content = el.fieldId
-          ? `{{${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}`
+          ? `{{.${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}`
           : el.content;
 
         if (el.type === 'image') {
-          const src = el.fieldId ? `{{${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
+          const src = el.fieldId ? `{{.${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
           return `<img src="${src}" alt="${el.content}" style="${styleString}" data-id="${el.id}" data-type="image" data-field-id="${el.fieldId || ''}" />`
         }
         
@@ -69,7 +73,7 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
   }
   
 const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] => {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined' || !html) return [];
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
   const parsedElements: TemplateElement[] = [];
@@ -88,7 +92,7 @@ const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] =
     
     if(fieldId) {
       const field = fields.find(f => f.id === fieldId);
-      if(field) content = `{{${field.name}}}`
+      if(field) content = `{{.${field.name}}}`
     }
 
     parsedElements.push({
@@ -111,32 +115,34 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
 
   const [name, setName] = useState(initialData.name);
   const [fields, setFields] = useState<Field[]>(initialData.fields || []);
-  const [elements, setElements] = useState<TemplateElement[]>(initialData.elements || []);
+  const [elements, setElements] = useState<TemplateElement[]>([]);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   
   const [htmlContent, setHtmlContent] = useState('');
   const [activeTab, setActiveTab] = useState("visual");
+  const [isInitializing, setIsInitializing] = useState(true);
   
   useEffect(() => {
     setName(initialData.name);
     setFields(initialData.fields || []);
     
-    const initialElements = initialData.htmlContent 
-      ? parseHtmlToElements(initialData.htmlContent, initialData.fields || []) 
-      : (initialData.elements || []);
-    setElements(initialElements);
-    
-    const initialHtml = initialData.htmlContent 
-      ? initialData.htmlContent 
-      : generateHtmlForTemplate({ ...initialData, elements: initialElements });
+    const initialHtml = initialData.htmlContent || generateHtmlForTemplate({ ...initialData, fields: initialData.fields || [] });
     setHtmlContent(initialHtml);
+    
+    const initialElements = parseHtmlToElements(initialHtml, initialData.fields || []);
+    setElements(initialElements);
+
+    setIsInitializing(false);
   }, [initialData]);
 
   const handleTabChange = (value: string) => {
-    if (value === 'code') {
+    if (isInitializing) return;
+    
+    if (activeTab === 'visual' && value === 'code') {
       // visual -> code
-      setHtmlContent(generateHtmlForTemplate({ name, fields, elements }));
-    } else if (value === 'visual') {
+      const generatedHtml = generateHtmlForTemplate({ name, fields, elements });
+      setHtmlContent(generatedHtml);
+    } else if (activeTab === 'code' && value === 'visual') {
       // code -> visual
       const newElements = parseHtmlToElements(htmlContent, fields);
       setElements(newElements);
@@ -144,12 +150,25 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     setActiveTab(value);
   }
 
-  const selectedElement = elements.find((el) => el.id === selectedElementId) || null;
+  const selectedElement = useMemo(() => {
+    return elements.find((el) => el.id === selectedElementId) || null;
+  }, [elements, selectedElementId]);
+
   
   const getCurrentTemplateState = (): Omit<Template, 'createdAt' | 'updatedAt'> => {
     const isCodeEditing = activeTab === 'code';
-    const finalElements = isCodeEditing ? parseHtmlToElements(htmlContent, fields) : elements;
-    const generatedHtml = isCodeEditing ? htmlContent : generateHtmlForTemplate({ name, fields, elements });
+    
+    let finalElements: TemplateElement[];
+    let generatedHtml: string;
+
+    if (isCodeEditing) {
+        generatedHtml = htmlContent;
+        finalElements = parseHtmlToElements(htmlContent, fields);
+    } else {
+        finalElements = elements;
+        // Generate HTML from visual elements if htmlContent is empty or we are in visual mode
+        generatedHtml = generateHtmlForTemplate({ name, fields, elements });
+    }
 
     return {
       id: initialData.id,
@@ -240,7 +259,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           </div>
         </header>
 
-        <main className="grid flex-1 gap-4 overflow-hidden p-4 grid-cols-[280px_1fr_300px]">
+        <main className="grid flex-1 gap-4 overflow-hidden p-4 grid-cols-[320px_1fr_300px]">
           <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2">
             <EditorToolbar />
             <FieldsManager fields={fields} setFields={setFields} />

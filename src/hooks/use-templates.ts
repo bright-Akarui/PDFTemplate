@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -8,15 +7,33 @@ const MOCK_TEMPLATES: Template[] = [
   {
     id: "1",
     name: "Standard Quotation",
-    elements: [
-       { id: 'el1', type: 'text', content: 'QUOTATION', style: { position: 'absolute', top: '40px', left: '40px', fontSize: '32px', fontWeight: 'bold' } },
-       { id: 'el2', type: 'text', content: 'Customer:', style: { position: 'absolute', top: '120px', left: '40px' } },
-       { id: 'el3', type: 'text', fieldId: 'f1', content: 'Customer Name', style: { position: 'absolute', top: '120px', left: '150px', fontWeight: 'bold' } },
-       { id: 'el4', type: 'text', content: 'Quote #:', style: { position: 'absolute', top: '145px', left: '40px' } },
-       { id: 'el5', type: 'text', fieldId: 'f2', content: 'Quote Number', style: { position: 'absolute', top: '145px', left: '150px' } },
-       { id: 'el6', type: 'text', content: 'Total:', style: { position: 'absolute', top: '500px', right: '150px', fontSize: '20px' } },
-       { id: 'el7', type: 'text', fieldId: 'f3', content: 'Total Amount', style: { position: 'absolute', top: '500px', right: '40px', fontSize: '20px', fontWeight: 'bold' } },
-    ],
+    elements: [],
+    htmlContent: `<html>
+  <head>
+    <style>
+      body { font-family: sans-serif; }
+      .template-container { position: relative; width: 210mm; height: 297mm; background: white; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+      .title { position: absolute; top: 40px; left: 40px; font-size: 32px; font-weight: bold; }
+      .customer-label { position: absolute; top: 120px; left: 40px; }
+      .customer-name { position: absolute; top: 120px; left: 150px; font-weight: bold; }
+      .quote-label { position: absolute; top: 145px; left: 40px; }
+      .quote-number { position: absolute; top: 145px; left: 150px; }
+      .total-label { position: absolute; top: 500px; right: 150px; font-size: 20px; }
+      .total-amount { position: absolute; top: 500px; right: 40px; font-size: 20px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <div class="template-container">
+      <div class="title">QUOTATION</div>
+      <div class="customer-label">Customer:</div>
+      <div class="customer-name">{{.customerName}}</div>
+      <div class="quote-label">Quote #:</div>
+      <div class="quote-number">{{.quoteNumber}}</div>
+      <div class="total-label">Total:</div>
+      <div class="total-amount">{{.totalAmount}}</div>
+    </div>
+  </body>
+</html>`,
     fields: [
       { id: "f1", name: "customerName", type: "text", sampleValue: "John Doe" },
       { id: "f2", name: "quoteNumber", type: "text", sampleValue: "Q-2024-001" },
@@ -27,13 +44,61 @@ const MOCK_TEMPLATES: Template[] = [
   },
   {
     id: "2",
-    name: "Invoice Template",
+    name: "Invoice With Items",
     elements: [],
-    htmlContent: `<html><body><h1>Invoice for {{clientName}}</h1></body></html>`,
+    htmlContent: `<html>
+  <head>
+    <style>
+      body { font-family: sans-serif; padding: 40px; }
+      h1, p { margin: 0 0 10px 0; }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+    </style>
+  </head>
+  <body>
+    <h1>Invoice</h1>
+    <p><strong>Invoice #:</strong> {{.invoiceId}}</p>
+    <p><strong>Client:</strong> {{.clientName}}</p>
+    <p><strong>Date:</strong> {{.dueDate}}</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Quantity</th>
+          <th>Price</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Items}}
+        <tr>
+          <td>{{.Name}}</td>
+          <td>{{.Qty}}</td>
+          <td>{{.Price}}</td>
+          <td>{{.Total}}</td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </body>
+</html>`,
     fields: [
       { id: "f1", name: "clientName", type: "text", sampleValue: "Jane Smith" },
       { id: "f2", name: "invoiceId", type: "text", sampleValue: "INV-07-334" },
       { id: "f3", name: "dueDate", type: "date", sampleValue: "2024-06-30" },
+      {
+        id: "f4",
+        name: "Items",
+        type: "table",
+        sampleValue: '[{"Name":"Web Design","Qty":1,"Price":1200,"Total":1200},{"Name":"Hosting","Qty":1,"Price":100,"Total":100}]',
+        itemSchema: [
+            { id: 'sf1', name: 'Name' },
+            { id: 'sf2', name: 'Qty' },
+            { id: 'sf3', name: 'Price' },
+            { id: 'sf4', name: 'Total' },
+        ]
+      }
     ],
     createdAt: "2024-05-18T09:00:00Z",
     updatedAt: "2024-05-18T09:00:00Z",

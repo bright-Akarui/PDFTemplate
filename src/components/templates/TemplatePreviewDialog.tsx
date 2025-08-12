@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useMemo } from "react"
@@ -13,6 +12,7 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import type { Template } from "@/lib/types"
+import { Textarea } from "@/components/ui/textarea"
 
 interface TemplatePreviewDialogProps {
   template: Template
@@ -20,16 +20,33 @@ interface TemplatePreviewDialogProps {
 }
 
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
-  const [formData, setFormData] = useState<Record<string, string>>(() =>
+  const [formData, setFormData] = useState<Record<string, any>>(() =>
     template.fields.reduce((acc, field) => {
-      acc[field.name] = field.sampleValue
+      if (field.type === 'table') {
+        try {
+          acc[field.name] = JSON.parse(field.sampleValue || '[]');
+        } catch {
+          acc[field.name] = [];
+        }
+      } else {
+         acc[field.name] = field.sampleValue;
+      }
       return acc
-    }, {} as Record<string, string>)
-  )
+    }, {} as Record<string, any>)
+  );
 
-  const handleInputChange = (fieldName: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [fieldName]: value }))
-  }
+  const handleInputChange = (fieldName: string, value: string, type: string) => {
+    setFormData((prev) => {
+      if (type === 'table') {
+        try {
+          return { ...prev, [fieldName]: JSON.parse(value) };
+        } catch {
+          return { ...prev, [fieldName]: [] };
+        }
+      }
+      return { ...prev, [fieldName]: value };
+    });
+  };
 
   const generatedHtmlForSave = useMemo(() => {
     if (template.htmlContent) {
@@ -84,10 +101,32 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
 
   const finalHtml = useMemo(() => {
     let populatedHtml = generatedHtmlForSave;
-    Object.entries(formData).forEach(([key, value]) => {
-      const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g")
-      populatedHtml = populatedHtml.replace(regex, value || `{{${key}}}`)
+    
+    // Handle {{range}} blocks first
+    const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
+    populatedHtml = populatedHtml.replace(rangeRegex, (match, arrayName, content) => {
+        const items = formData[arrayName.trim()] as any[];
+        if (!Array.isArray(items)) return '';
+
+        return items.map(item => {
+            let itemContent = content;
+            Object.keys(item).forEach(key => {
+                const itemRegex = new RegExp(`\\{\\{\\.${key}\\}\\}`, 'g');
+                itemContent = itemContent.replace(itemRegex, item[key]);
+            });
+            return itemContent;
+        }).join('');
     });
+
+
+    // Handle simple {{.field}} replacements
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value !== 'object') {
+        const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
+        populatedHtml = populatedHtml.replace(regex, String(value) || "");
+      }
+    });
+
     return populatedHtml;
   }, [generatedHtmlForSave, formData]);
 
@@ -110,13 +149,24 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                   <Label htmlFor={field.name} className="capitalize">
                     {field.name.replace(/([A-Z])/g, ' $1')}
                   </Label>
-                  <Input
-                    id={field.name}
-                    type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                    value={formData[field.name] || ""}
-                    onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    placeholder={field.sampleValue}
-                  />
+                  {field.type === 'table' ? (
+                    <Textarea
+                      id={field.name}
+                      value={typeof formData[field.name] === 'object' ? JSON.stringify(formData[field.name], null, 2) : String(formData[field.name])}
+                      onChange={(e) => handleInputChange(field.name, e.target.value, field.type)}
+                      placeholder={field.sampleValue}
+                      className="text-xs font-mono"
+                      rows={5}
+                    />
+                  ) : (
+                    <Input
+                      id={field.name}
+                      type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+                      value={formData[field.name] || ""}
+                      onChange={(e) => handleInputChange(field.name, e.target.value, field.type)}
+                      placeholder={field.sampleValue}
+                    />
+                  )}
                 </div>
               ))}
               {template.fields.length === 0 && (
