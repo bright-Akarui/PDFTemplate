@@ -51,13 +51,14 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
 
     if (isNewTemplate) {
         const newPath = `/editor/${templateToSave.id}`;
-        router.push(newPath);
+        router.replace(newPath); // use replace to avoid back-navigation to 'new' page
+    } else {
+        router.refresh();
     }
-    router.refresh();
   };
   
   return (
-      <div className="flex h-screen w-full flex-col bg-muted/40">
+      <div className="flex flex-col h-full w-full bg-muted/40">
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 lg:px-6">
           <div className="flex items-center gap-2 md:gap-4">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => router.push('/')}>
@@ -83,7 +84,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
 
         <main className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden p-4">
           {/* Code Editor Section (Left) */}
-          <div className="w-full lg:w-4/5 flex flex-col min-h-0 bg-background rounded-lg border">
+          <div className="flex-1 flex flex-col min-h-0 lg:w-3/4 bg-background rounded-lg border">
               <Textarea
                   value={htmlContent}
                   onChange={(e) => setHtmlContent(e.target.value)}
@@ -93,7 +94,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           </div>
 
           {/* Fields Manager Section (Right) */}
-          <div className="w-full lg:w-1/5 flex flex-col gap-4 min-h-0">
+          <div className="lg:w-1/4 flex flex-col gap-4 min-h-0">
             <div className="overflow-y-auto rounded-lg border bg-background h-full">
               <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
             </div>
