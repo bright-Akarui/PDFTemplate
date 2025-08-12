@@ -125,14 +125,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
               )}
             </div>
           </div>
-          <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center p-4">
+          <div className="md:col-span-2 border rounded-lg overflow-y-auto bg-muted/60 flex items-center justify-center p-4">
             <div
               className="bg-white shadow-lg"
               style={{
                 width: '794px',
                 height: '1123px',
-                transform: 'scale(0.4)',
-                transformOrigin: 'center center',
+                transform: 'scale(0.5)',
+                transformOrigin: 'top left',
               }}
             >
               <iframe
@@ -140,6 +140,11 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                 title="Template Preview"
                 className="w-full h-full border-0"
                 sandbox="allow-same-origin allow-scripts"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
               />
             </div>
           </div>
