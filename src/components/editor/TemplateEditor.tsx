@@ -4,7 +4,7 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import type { FC } from "react";
 import { useRouter } from "next/navigation";
-import type { Template, TemplateElement, Field } from "@/lib/types";
+import type { Template, TemplateElement, Field, CSSProperties } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -38,10 +38,10 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
 
         if (el.type === 'image') {
           const src = el.fieldId ? `{{${template.fields?.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
-          return `<img src="${src}" alt="${el.content}" style="${styleString}" />`
+          return `<img src="${src}" alt="${el.content}" style="${styleString}" data-id="${el.id}" data-type="image" data-field-id="${el.fieldId || ''}" />`
         }
         
-        return `<div style="${styleString}">${content}</div>`
+        return `<div style="${styleString}" data-id="${el.id}" data-type="text" data-field-id="${el.fieldId || ''}">${content}</div>`
       })
       .join("\n")
 
@@ -67,6 +67,42 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
 </html>
     `
   }
+  
+const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] => {
+  if (typeof window === 'undefined') return [];
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const parsedElements: TemplateElement[] = [];
+
+  doc.querySelectorAll('[data-id]').forEach(node => {
+    const el = node as HTMLElement;
+    const style: CSSProperties = {};
+    for (let i = 0; i < el.style.length; i++) {
+        const propName = el.style[i];
+        const camelCaseName = propName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        style[camelCaseName as keyof CSSProperties] = el.style.getPropertyValue(propName);
+    }
+    
+    let content = el.innerHTML;
+    const fieldId = el.dataset.fieldId;
+    
+    if(fieldId) {
+      const field = fields.find(f => f.id === fieldId);
+      if(field) content = `{{${field.name}}}`
+    }
+
+    parsedElements.push({
+      id: el.dataset.id || `el-${Date.now()}`,
+      type: (el.dataset.type as 'text' | 'image') || 'text',
+      content: el.tagName.toLowerCase() === 'img' ? (el as HTMLImageElement).alt : el.innerHTML,
+      style: style,
+      fieldId: el.dataset.fieldId || undefined,
+    });
+  });
+
+  return parsedElements;
+};
+
 
 const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate }) => {
   const router = useRouter();
@@ -91,28 +127,32 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   useEffect(() => {
     setName(initialData.name);
     setFields(initialData.fields || []);
-    setElements(initialData.elements || []);
+    setElements(initialData.htmlContent ? parseHtmlToElements(initialData.htmlContent, initialData.fields) : initialData.elements || []);
     setHtmlContent(initialData.htmlContent || generateHtmlForTemplate({ ...initialData, name: initialData.name, fields: initialData.fields, elements: initialData.elements }));
   }, [initialData]);
 
   useEffect(() => {
     if (activeTab === 'code') {
       setHtmlContent(generateHtmlForTemplate({ name, fields, elements }));
+    } else if (activeTab === 'visual') {
+      const newElements = parseHtmlToElements(htmlContent, fields);
+      setElements(newElements);
     }
-  }, [name, fields, elements, activeTab]);
+  }, [name, fields, elements, activeTab, htmlContent]);
 
 
   const selectedElement = elements.find((el) => el.id === selectedElementId) || null;
   
   const getCurrentTemplateState = (): Omit<Template, 'createdAt' | 'updatedAt'> => {
     const isCodeEditing = activeTab === 'code';
-    const generatedHtml = generateHtmlForTemplate({ name, fields, elements });
+    const finalElements = isCodeEditing ? parseHtmlToElements(htmlContent, fields) : elements;
+    const generatedHtml = generateHtmlForTemplate({ name, fields, elements: finalElements });
 
     return {
       id: initialData.id,
       name,
       fields,
-      elements: isCodeEditing ? [] : elements, 
+      elements: finalElements, 
       htmlContent: isCodeEditing ? htmlContent : generatedHtml,
     }
   }
@@ -212,7 +252,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                     </TabsList>
                 </div>
                 <TabsContent value="visual" className="flex-grow overflow-y-auto bg-muted/60">
-                   <div className="flex-grow p-4 mx-auto">
+                   <div className="flex-grow p-4 mx-auto w-full h-full flex items-start justify-center">
                       <EditorCanvas
                         elements={elements}
                         onDropElement={addElement}
