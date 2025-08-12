@@ -13,8 +13,6 @@ import FieldsManager from "./FieldsManager";
 import { TemplatePreviewDialog } from "@/components/templates/TemplatePreviewDialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useTemplates } from "@/hooks/use-templates";
-import { cn } from "@/lib/utils";
-
 
 const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = ({ initialData, isNewTemplate }) => {
   const router = useRouter();
@@ -84,19 +82,19 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
         </header>
 
         <main className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden p-4">
-          {/* Code Editor Section */}
-          <div className="flex-1 lg:w-2/3 flex flex-col min-h-0 bg-background rounded-lg border p-2">
+          {/* Code Editor Section (Left) */}
+          <div className="w-full lg:w-4/5 flex flex-col min-h-0 bg-background rounded-lg border">
               <Textarea
                   value={htmlContent}
                   onChange={(e) => setHtmlContent(e.target.value)}
-                  className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea"
+                  className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea p-4"
                   placeholder="Enter your HTML and CSS here..."
               />
           </div>
 
-          {/* Fields Manager Section */}
-          <div className="w-full lg:w-1/3 lg:max-w-md flex flex-col gap-4">
-            <div className="overflow-y-auto rounded-lg border bg-background p-2 h-full">
+          {/* Fields Manager Section (Right) */}
+          <div className="w-full lg:w-1/5 flex flex-col gap-4 min-h-0">
+            <div className="overflow-y-auto rounded-lg border bg-background h-full">
               <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
             </div>
           </div>
