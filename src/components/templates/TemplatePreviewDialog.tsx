@@ -127,18 +127,20 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
           </div>
           <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center p-4">
             <div
-                className="w-[794px] h-[1123px] bg-white shadow-lg"
-                style={{
-                    transform: 'scale(0.4)',
-                    transformOrigin: 'top center',
-                }}
+              className="bg-white shadow-lg"
+              style={{
+                width: '794px',
+                height: '1123px',
+                transform: 'scale(0.4)',
+                transformOrigin: 'top center',
+              }}
             >
-                <iframe
-                    srcDoc={finalHtml}
-                    title="Template Preview"
-                    className="w-full h-full border-0"
-                    sandbox="allow-same-origin allow-scripts"
-                />
+              <iframe
+                srcDoc={finalHtml}
+                title="Template Preview"
+                className="w-full h-full border-0"
+                sandbox="allow-same-origin allow-scripts"
+              />
             </div>
           </div>
         </div>
