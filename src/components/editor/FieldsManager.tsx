@@ -1,7 +1,8 @@
+
 "use client";
 
-import type { FC, Dispatch, SetStateAction } from "react";
-import type { Field, SubField } from "@/lib/types";
+import type { FC } from "react";
+import type { Field } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,20 +10,22 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileJson2 } from "lucide-react";
-import { useForm, useFieldArray, Controller, useWatch } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   fields: z.array(
     z.object({
+      id: z.string(),
       name: z.string().min(1, "Name is required"),
       type: z.enum(["text", "number", "date", "image", "table"]),
       sampleValue: z.string().min(1, "Sample value is required"),
       itemSchema: z.array(
         z.object({
-          name: z.string().min(1, "Column name is required"),
           id: z.string(),
+          name: z.string().min(1, "Column name is required"),
         })
       ).optional(),
     })
@@ -33,7 +36,7 @@ type FormData = z.infer<typeof formSchema>;
 
 interface FieldsManagerProps {
   fields: Field[];
-  setFields: Dispatch<SetStateAction<Field[]>>;
+  setFields: (fields: Field[]) => void;
 }
 
 const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, control }) => {
@@ -67,7 +70,7 @@ const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, contr
 const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
   const { control, handleSubmit, watch, getValues } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fields: fields.map(({id, ...rest}) => rest) },
+    defaultValues: { fields: fields },
   });
 
   const { fields: formFields, append, remove } = useFieldArray({
@@ -75,27 +78,17 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
     name: "fields",
   });
   
-  const watchedFields = useWatch({ control, name: "fields" });
+  const watchedFields = watch("fields");
 
-  watch((value) => {
-    const newFields: Field[] = (value.fields || []).map((f, i) => {
-      const baseField = fields[i] || {};
-      const newItemSchema = (f?.itemSchema || []).map((sf, j) => ({
-          id: baseField.itemSchema?.[j]?.id || sf.id || `sf-${Date.now()}-${i}-${j}`,
-          name: sf.name,
-      }));
-
-      return {
-        id: baseField.id || `f-${Date.now()}-${i}`,
-        ...f,
-        itemSchema: newItemSchema
-      } as Field;
+  useEffect(() => {
+    const subscription = watch((value) => {
+        setFields(value.fields as Field[]);
     });
-    setFields(newFields);
-  });
+    return () => subscription.unsubscribe();
+  }, [watch, setFields]);
   
   const addNewField = () => {
-    append({ name: "", type: "text", sampleValue: "" });
+    append({ id: `f-${Date.now()}`, name: "", type: "text", sampleValue: "" });
   };
 
   return (
@@ -105,64 +98,66 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
         <CardDescription>Define variables for your template.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {formFields.length > 0 ? formFields.map((field, index) => (
-            <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">
-              <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => remove(index)}>
-                <Trash2 className="w-4 h-4 text-destructive"/>
-              </Button>
-              <div>
-                <Label>Field Name</Label>
-                <Controller
-                  name={`fields.${index}.name`}
-                  control={control}
-                  render={({ field }) => <Input {...field} placeholder="e.g., customerName" />}
-                />
-              </div>
-              <div>
-                <Label>Field Type</Label>
-                <Controller
-                    name={`fields.${index}.type`}
+        <form>
+            <div className="space-y-4">
+            {formFields.length > 0 ? formFields.map((field, index) => (
+                <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">
+                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => remove(index)}>
+                    <Trash2 className="w-4 h-4 text-destructive"/>
+                </Button>
+                <div>
+                    <Label>Field Name</Label>
+                    <Controller
+                    name={`fields.${index}.name`}
                     control={control}
-                    render={({ field }) => (
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <SelectTrigger><SelectValue /></SelectValue>
-                        <SelectContent>
-                          <SelectItem value="text">Text</SelectItem>
-                          <SelectItem value="number">Number</SelectItem>
-                          <SelectItem value="date">Date</SelectItem>
-                          <SelectItem value="image">Image URL</SelectItem>
-                          <SelectItem value="table">Table (Array)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-              </div>
-               <div>
-                <Label>Sample Value</Label>
-                { getValues(`fields.${index}.type`) === 'table' ? (
-                     <Controller
+                    render={({ field }) => <Input {...field} placeholder="e.g., customerName" />}
+                    />
+                </div>
+                <div>
+                    <Label>Field Type</Label>
+                    <Controller
+                        name={`fields.${index}.type`}
+                        control={control}
+                        render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="text">Text</SelectItem>
+                            <SelectItem value="number">Number</SelectItem>
+                            <SelectItem value="date">Date</SelectItem>
+                            <SelectItem value="image">Image URL</SelectItem>
+                            <SelectItem value="table">Table (Array)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        )}
+                    />
+                </div>
+                <div>
+                    <Label>Sample Value</Label>
+                    { getValues(`fields.${index}.type`) === 'table' ? (
+                        <Controller
+                            name={`fields.${index}.sampleValue`}
+                            control={control}
+                            render={({ field }) => <Textarea {...field} placeholder='e.g., [{"col": "value"}]' className="text-xs" rows={4} />}
+                        />
+                    ) : (
+                        <Controller
                         name={`fields.${index}.sampleValue`}
                         control={control}
-                        render={({ field }) => <Textarea {...field} placeholder='e.g., [{"col": "value"}]' className="text-xs" rows={4} />}
-                     />
-                ) : (
-                    <Controller
-                      name={`fields.${index}.sampleValue`}
-                      control={control}
-                      render={({ field }) => <Input {...field} placeholder="e.g., John Doe" />}
-                    />
-                )}
-              </div>
-              {watchedFields[index]?.type === 'table' && <TableField nestIndex={index} control={control} />}
+                        render={({ field }) => <Input {...field} placeholder="e.g., John Doe" />}
+                        />
+                    )}
+                </div>
+                {watchedFields[index]?.type === 'table' && <TableField nestIndex={index} control={control} />}
+                </div>
+            )) : (
+                <div className="text-center text-sm text-muted-foreground py-4">
+                <FileJson2 className="mx-auto h-8 w-8 mb-2" />
+                No fields defined.
+                </div>
+            )}
             </div>
-          )) : (
-            <div className="text-center text-sm text-muted-foreground py-4">
-              <FileJson2 className="mx-auto h-8 w-8 mb-2" />
-              No fields defined.
-            </div>
-          )}
-        </div>
+        </form>
         <Button onClick={addNewField} variant="outline" className="w-full mt-4">
           <Plus className="w-4 h-4 mr-2" /> Add Field
         </Button>
