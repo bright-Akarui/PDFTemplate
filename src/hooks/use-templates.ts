@@ -13,25 +13,19 @@ const MOCK_TEMPLATES: Template[] = [
   <head>
     <style>
       body { font-family: sans-serif; }
-      .template-container { position: relative; width: 210mm; height: 297mm; background: white; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-      .title { position: absolute; top: 40px; left: 40px; font-size: 32px; font-weight: bold; }
-      .customer-label { position: absolute; top: 120px; left: 40px; }
-      .customer-name { position: absolute; top: 120px; left: 150px; font-weight: bold; }
-      .quote-label { position: absolute; top: 145px; left: 40px; }
-      .quote-number { position: absolute; top: 145px; left: 150px; }
-      .total-label { position: absolute; top: 500px; right: 150px; font-size: 20px; }
-      .total-amount { position: absolute; top: 500px; right: 40px; font-size: 20px; font-weight: bold; }
+      .template-container { position: relative; width: 210mm; height: 297mm; background: white; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 40px; }
+      .title { font-size: 32px; font-weight: bold; }
     </style>
   </head>
   <body>
     <div class="template-container">
-      <div class="title">QUOTATION</div>
-      <div class="customer-label">Customer:</div>
-      <div class="customer-name">{{.customerName}}</div>
-      <div class="quote-label">Quote #:</div>
-      <div class="quote-number">{{.quoteNumber}}</div>
-      <div class="total-label">Total:</div>
-      <div class="total-amount">{{.totalAmount}}</div>
+      <div data-id="el-1" data-type="text" style="position: absolute; top: 40px; left: 40px; font-size: 32px; font-weight: bold;">QUOTATION</div>
+      <div data-id="el-2" data-type="text" style="position: absolute; top: 120px; left: 40px;">Customer:</div>
+      <div data-id="el-3" data-type="text" data-field-id="f1" style="position: absolute; top: 120px; left: 150px; font-weight: bold;">{{.customerName}}</div>
+      <div data-id="el-4" data-type="text" style="position: absolute; top: 145px; left: 40px;">Quote #:</div>
+      <div data-id="el-5" data-type="text" data-field-id="f2" style="position: absolute; top: 145px; left: 150px;">{{.quoteNumber}}</div>
+      <div data-id="el-6" data-type="text" style="position: absolute; top: 500px; right: 150px; font-size: 20px;">Total:</div>
+      <div data-id="el-7" data-type="text" data-field-id="f3" style="position: absolute; top: 500px; right: 40px; font-size: 20px; font-weight: bold;">{{.totalAmount}}</div>
     </div>
   </body>
 </html>`,
@@ -50,7 +44,8 @@ const MOCK_TEMPLATES: Template[] = [
     htmlContent: `<html>
   <head>
     <style>
-      body { font-family: sans-serif; padding: 40px; }
+      body { font-family: sans-serif; }
+      .template-container { position: relative; width: 210mm; height: 297mm; background: white; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 40px; }
       h1, p { margin: 0 0 10px 0; }
       table { width: 100%; border-collapse: collapse; margin-top: 20px; }
       th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -58,30 +53,33 @@ const MOCK_TEMPLATES: Template[] = [
     </style>
   </head>
   <body>
-    <h1>Invoice</h1>
-    <p><strong>Invoice #:</strong> {{.invoiceId}}</p>
-    <p><strong>Client:</strong> {{.clientName}}</p>
-    <p><strong>Date:</strong> {{.dueDate}}</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Item</th>
-          <th>Quantity</th>
-          <th>Price</th>
-          <th>Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{range .Items}}
-        <tr>
-          <td>{{.Name}}</td>
-          <td>{{.Qty}}</td>
-          <td>{{.Price}}</td>
-          <td>{{.Total}}</td>
-        </tr>
-        {{end}}
-      </tbody>
-    </table>
+    <div class="template-container">
+      <h1 data-id="el-inv-1" data-type="text">Invoice</h1>
+      <p data-id="el-inv-2" data-type="text" data-field-id="f2"><strong>Invoice #:</strong> {{.invoiceId}}</p>
+      <p data-id="el-inv-3" data-type="text" data-field-id="f1"><strong>Client:</strong> {{.clientName}}</p>
+      <p data-id="el-inv-4" data-type="text" data-field-id="f3"><strong>Date:</strong> {{.dueDate}}</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{range .Items}}
+          <tr>
+            <td>{{.Name}}</td>
+            <td>{{.Qty}}</td>
+            <td>{{.Price}}</td>
+            <td>{{.Total}}</td>
+          </tr>
+          {{end}}
+        </tbody>
+      </table>
+    </div>
   </body>
 </html>`,
     fields: [
@@ -115,13 +113,10 @@ export const useTemplates = () => {
   useEffect(() => {
     try {
       const storedItems = localStorage.getItem(STORAGE_KEY);
-      if (storedItems) {
-        setTemplates(JSON.parse(storedItems));
-      } else {
-        // Initialize with mock data if nothing is in storage
-        setTemplates(MOCK_TEMPLATES);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_TEMPLATES));
-      }
+      // To ensure latest mock data is always used for this tutorial, we reset it on load.
+      // In a real app, you would likely only set this if `storedItems` is null.
+      setTemplates(MOCK_TEMPLATES);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_TEMPLATES));
     } catch (error) {
       console.error("Failed to access localStorage", error);
       setTemplates(MOCK_TEMPLATES);

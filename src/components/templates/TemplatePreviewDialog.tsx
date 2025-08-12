@@ -1,6 +1,7 @@
+
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -20,11 +21,15 @@ interface TemplatePreviewDialogProps {
 }
 
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
-  const [formData, setFormData] = useState<Record<string, any>>(() =>
-    template.fields.reduce((acc, field) => {
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    setFormData(template.fields.reduce((acc, field) => {
       if (field.type === 'table') {
         try {
-          acc[field.name] = JSON.parse(field.sampleValue || '[]');
+          // Ensure sampleValue is a string before parsing
+          const sample = typeof field.sampleValue === 'string' ? field.sampleValue : '[]';
+          acc[field.name] = JSON.parse(sample);
         } catch {
           acc[field.name] = [];
         }
@@ -32,8 +37,8 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
          acc[field.name] = field.sampleValue;
       }
       return acc
-    }, {} as Record<string, any>)
-  );
+    }, {} as Record<string, any>));
+  }, [template.fields]);
 
   const handleInputChange = (fieldName: string, value: string, type: string) => {
     setFormData((prev) => {
@@ -42,6 +47,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
           return { ...prev, [fieldName]: JSON.parse(value) };
         } catch {
           // If parsing fails, keep the raw string value to allow user to fix it.
+          // This is useful for letting the user correct syntax errors in the textarea.
           return { ...prev, [fieldName]: value };
         }
       }
@@ -49,65 +55,17 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     });
   };
 
-  const generatedHtmlForSave = useMemo(() => {
-    if (template.htmlContent) {
-      return template.htmlContent;
-    }
-    
-    if (!template.elements) return ""
-
-    const elementsHtml = template.elements
-      .map((el) => {
-        const styleString = Object.entries(el.style)
-          .map(([key, value]) => `${key.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`)}: ${value};`)
-          .join(" ")
-        
-        const content = el.fieldId
-          ? `{{${template.fields.find(f => f.id === el.fieldId)?.name || ''}}}`
-          : el.content;
-
-        if (el.type === 'image') {
-          const src = el.fieldId ? `{{${template.fields.find(f => f.id === el.fieldId)?.name || ''}}}` : el.content;
-          return `<img src="${src}" alt="${el.content}" style="${styleString}" />`
-        }
-        
-        return `<div style="${styleString}">${content}</div>`
-      })
-      .join("\n")
-
-    return `
-      <html>
-        <head>
-          <style>
-            body { font-family: sans-serif; margin: 0; }
-            .template-container { 
-              position: relative; 
-              width: 210mm; 
-              height: 297mm; 
-              background: white; 
-              margin: auto; 
-              box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            }
-          </style>
-        </head>
-        <body>
-          <div class="template-container">
-            ${elementsHtml}
-          </div>
-        </body>
-      </html>
-    `
-  }, [template])
-
-
   const finalHtml = useMemo(() => {
-    let populatedHtml = generatedHtmlForSave;
+    let populatedHtml = template.htmlContent || '';
     
     // Handle {{range .Items}} blocks first
     const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
     populatedHtml = populatedHtml.replace(rangeRegex, (match, arrayName, content) => {
         const items = formData[arrayName.trim()] as any[];
-        if (!Array.isArray(items)) return '';
+        if (!Array.isArray(items)) {
+          console.warn(`Template Warning: Field "${arrayName.trim()}" is not an array for range.`);
+          return ''; // Return empty string if data is not an array
+        }
 
         return items.map(item => {
             let itemContent = content;
@@ -123,14 +81,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
 
     // Handle simple {{.field}} replacements for non-object values
     Object.entries(formData).forEach(([key, value]) => {
-      if (typeof value !== 'object') {
+      if (typeof value !== 'object' || value === null) {
         const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
-        populatedHtml = populatedHtml.replace(regex, String(value) || "");
+        populatedHtml = populatedHtml.replace(regex, String(value ?? ""));
       }
     });
 
     return populatedHtml;
-  }, [generatedHtmlForSave, formData]);
+  }, [template.htmlContent, formData]);
 
   return (
     <Dialog>
@@ -154,7 +112,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                   {field.type === 'table' ? (
                     <Textarea
                       id={field.name}
-                      value={typeof formData[field.name] === 'object' ? JSON.stringify(formData[field.name], null, 2) : String(formData[field.name])}
+                      value={typeof formData[field.name] === 'object' ? JSON.stringify(formData[field.name], null, 2) : String(formData[field.name] || '')}
                       onChange={(e) => handleInputChange(field.name, e.target.value, field.type)}
                       placeholder={field.sampleValue}
                       className="text-xs font-mono"

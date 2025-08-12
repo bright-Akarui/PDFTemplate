@@ -25,7 +25,7 @@ interface TemplateEditorProps {
 
 const generateHtmlForTemplate = (template: Partial<Template>): string => {
     // If htmlContent already exists and we are not in visual editing mode, prefer it.
-    if (template.htmlContent) {
+    if (template.htmlContent && !template.elements?.length) {
         return template.htmlContent;
     }
 
@@ -49,6 +49,15 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
         return `<div style="${styleString}" data-id="${el.id}" data-type="text" data-field-id="${el.fieldId || ''}">${content}</div>`
       })
       .join("\n")
+    
+    // Preserve range blocks if they exist in the original htmlContent
+    const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
+    const existingHtml = template.htmlContent || '';
+    let rangeBlocks = '';
+    let match;
+    while ((match = rangeRegex.exec(existingHtml)) !== null) {
+      rangeBlocks += match[0];
+    }
 
     return `<html>
   <head>
@@ -62,11 +71,16 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
         margin: auto; 
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
       }
+      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+      ul { padding-left: 20px; }
     </style>
   </head>
   <body>
     <div class="template-container">
       ${elementsHtml}
+      ${rangeBlocks}
     </div>
   </body>
 </html>
@@ -79,7 +93,9 @@ const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] =
   const doc = parser.parseFromString(html, 'text/html');
   const parsedElements: TemplateElement[] = [];
 
-  doc.querySelectorAll('[data-id]').forEach(node => {
+  // This will select only elements that are direct children of the container,
+  // effectively ignoring anything inside a potential range block for visual editing.
+  doc.querySelectorAll('.template-container > [data-id]').forEach(node => {
     const el = node as HTMLElement;
     const style: CSSProperties = {};
     for (let i = 0; i < el.style.length; i++) {
@@ -88,18 +104,20 @@ const parseHtmlToElements = (html: string, fields: Field[]): TemplateElement[] =
         style[camelCaseName as keyof CSSProperties] = el.style.getPropertyValue(propName);
     }
     
-    let content = el.innerHTML;
     const fieldId = el.dataset.fieldId;
+    let content = el.innerHTML;
     
-    if(fieldId) {
-      const field = fields.find(f => f.id === fieldId);
-      if(field) content = `{{.${field.name}}}`
+    // For visual representation, we don't show the {{.FieldName}} syntax
+    if (el.tagName.toLowerCase() === 'img') {
+        content = (el as HTMLImageElement).alt;
+    } else {
+        content = el.innerHTML;
     }
 
     parsedElements.push({
       id: el.dataset.id || `el-${Date.now()}`,
       type: (el.dataset.type as 'text' | 'image') || 'text',
-      content: el.tagName.toLowerCase() === 'img' ? (el as HTMLImageElement).alt : el.innerHTML,
+      content: content,
       style: style,
       fieldId: el.dataset.fieldId || undefined,
     });
@@ -141,7 +159,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
     
     if (activeTab === 'visual' && value === 'code') {
       // visual -> code
-      const generatedHtml = generateHtmlForTemplate({ name, fields, elements });
+      const generatedHtml = generateHtmlForTemplate({ name, fields, elements, htmlContent });
       setHtmlContent(generatedHtml);
     } else if (activeTab === 'code' && value === 'visual') {
       // code -> visual
@@ -167,8 +185,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
         finalElements = parseHtmlToElements(htmlContent, fields);
     } else {
         finalElements = elements;
-        // Generate HTML from visual elements if htmlContent is empty or we are in visual mode
-        generatedHtml = generateHtmlForTemplate({ name, fields, elements });
+        generatedHtml = generateHtmlForTemplate({ name, fields, elements, htmlContent });
     }
 
     return {
