@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Settings2, MousePointerSquare } from "lucide-react";
+import { Trash2, Settings2, MousePointerSquareDashed } from "lucide-react";
 
 interface PropertiesPanelProps {
   element: TemplateElement | null;
@@ -26,7 +26,7 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
           <CardTitle className="flex items-center gap-2 text-base font-semibold"><Settings2 /> Properties</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center text-center text-muted-foreground h-1/2">
-            <MousePointerSquare className="w-10 h-10 mb-4" />
+            <MousePointerSquareDashed className="w-10 h-10 mb-4" />
             <p className="font-medium">Select an element</p>
             <p className="text-sm">Click an element on the canvas to edit its properties.</p>
         </CardContent>
