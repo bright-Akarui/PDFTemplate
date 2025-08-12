@@ -68,9 +68,9 @@ const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, contr
 }
 
 const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
-  const { control, handleSubmit, watch, getValues } = useForm<FormData>({
+  const { control, handleSubmit, watch, getValues, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fields: fields },
+    defaultValues: { fields: [] },
   });
 
   const { fields: formFields, append, remove } = useFieldArray({
@@ -78,9 +78,13 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
     name: "fields",
   });
   
-  const watchedFields = watch("fields");
+  useEffect(() => {
+    // When the external fields prop changes, reset the form with the new values.
+    reset({ fields });
+  }, [fields, reset]);
 
   useEffect(() => {
+    // Subscribe to form changes and notify the parent component.
     const subscription = watch((value) => {
         setFields(value.fields as Field[]);
     });
@@ -90,6 +94,8 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", type: "text", sampleValue: "" });
   };
+
+  const watchedFields = watch("fields");
 
   return (
     <Card>
