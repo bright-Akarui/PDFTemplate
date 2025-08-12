@@ -56,65 +56,71 @@ const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, contr
                         control={control}
                         render={({ field }) => <Input {...field} placeholder="Column Name" className="h-8"/>}
                     />
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(k)}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(k)} type="button">
                         <Trash2 className="w-4 h-4 text-destructive"/>
                     </Button>
                 </div>
             ))}
-            <Button size="sm" variant="outline" className="w-full h-8" onClick={() => append({ name: '', id: `sf-${Date.now()}` })}>
+            <Button size="sm" variant="outline" className="w-full h-8" onClick={() => append({ name: '', id: `sf-${Date.now()}` })} type="button">
                 <Plus className="w-4 h-4 mr-2"/> Add Column
             </Button>
         </div>
     )
 }
 
-const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields, setFields }) => {
-  const { control, handleSubmit, watch, getValues, reset, formState } = useForm<FormData>({
+const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFields, setFields }) => {
+  const { control, handleSubmit, watch, getValues, reset, trigger } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fields: fields },
+    defaultValues: { fields: initialFields },
   });
 
-  const { fields: formFields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control,
     name: "fields",
   });
   
-  // Only reset the form when the template itself changes (by checking its ID).
-  // This prevents resetting on every state change within the editor.
   useEffect(() => {
-    reset({ fields });
-  }, [templateId, reset]);
+    reset({ fields: initialFields });
+  }, [templateId, initialFields, reset]);
 
-  // Subscribe to form changes and notify the parent component.
-  useEffect(() => {
-    const subscription = watch((value) => {
-        // The form is considered "dirty" only after the user has interacted with it.
-        // We only update the parent state if there's a change initiated by the user.
-        if (formState.isDirty) {
-          setFields(value.fields as Field[]);
-        }
-    });
-    return () => subscription.unsubscribe();
-  }, [watch, setFields, formState.isDirty]);
-  
+  const handleFormChange = () => {
+    trigger();
+    const currentFields = getValues().fields;
+    setFields(currentFields as Field[]);
+  };
+
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", type: "text", sampleValue: "" });
+    // This is a workaround to ensure the state updates after appending
+    setTimeout(() => {
+        const currentFields = getValues().fields;
+        setFields(currentFields as Field[]);
+    }, 0);
   };
+  
+  const removeField = (index: number) => {
+    remove(index);
+    setTimeout(() => {
+        const currentFields = getValues().fields;
+        setFields(currentFields as Field[]);
+    }, 0);
+  }
+
 
   const watchedFields = watch("fields");
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Data Fields</CardTitle>
         <CardDescription>Define variables for your template.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onChange={handleSubmit(() => {})}>
+        <form onBlur={handleSubmit(handleFormChange)}>
             <div className="space-y-4">
-            {formFields.length > 0 ? formFields.map((field, index) => (
+            {fields.length > 0 ? fields.map((field, index) => (
                 <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">
-                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => remove(index)}>
+                <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-7 w-7" onClick={() => removeField(index)} type="button">
                     <Trash2 className="w-4 h-4 text-destructive"/>
                 </Button>
                 <div>
@@ -131,7 +137,10 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields, setFields }
                         name={`fields.${index}.type`}
                         control={control}
                         render={({ field }) => (
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={(value) => {
+                            field.onChange(value);
+                            handleFormChange();
+                        }} defaultValue={field.value}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
                             <SelectItem value="text">Text</SelectItem>
@@ -146,7 +155,7 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields, setFields }
                 </div>
                 <div>
                     <Label>Sample Value</Label>
-                    { getValues(`fields.${index}.type`) === 'table' ? (
+                    { watchedFields[index]?.type === 'table' ? (
                         <Controller
                             name={`fields.${index}.sampleValue`}
                             control={control}
@@ -170,7 +179,7 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields, setFields }
             )}
             </div>
         </form>
-        <Button onClick={addNewField} variant="outline" className="w-full mt-4">
+        <Button onClick={addNewField} variant="outline" className="w-full mt-4" type="button">
           <Plus className="w-4 h-4 mr-2" /> Add Field
         </Button>
       </CardContent>

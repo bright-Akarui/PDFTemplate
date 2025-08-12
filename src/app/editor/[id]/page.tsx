@@ -3,11 +3,42 @@
 
 import TemplateEditor from "@/components/editor/TemplateEditor";
 import { useTemplates } from "@/hooks/use-templates";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
 import { useMemo } from "react";
 import type { Template } from "@/lib/types";
 import { useParams } from "next/navigation";
+
+const defaultHtml = `<html>
+  <head>
+    <style>
+      body { 
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        background: white;
+        margin: 20px auto;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        box-sizing: border-box;
+        padding: 40px;
+      }
+      /* Add your styles here */
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background-color: #f2f2f2; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <!-- Add your elements here -->
+      <h1>{{.title}}</h1>
+      <p>This is a code-only template. You can use Go template syntax for variables.</p>
+    </div>
+  </body>
+</html>`;
+
 
 export default function EditorPage() {
   const params = useParams();
@@ -17,13 +48,14 @@ export default function EditorPage() {
   const template = useMemo(() => {
     if (!isLoaded) return undefined;
     if (id === 'new') {
-        // Return a new template structure, but don't save it yet.
+        // Return a new template structure for code-only editor
         return {
             id: `t-${Date.now()}`,
-            name: "New Template",
-            elements: [],
-            fields: [],
-            htmlContent: '',
+            name: "New Code Template",
+            fields: [
+              { id: 'f1', name: 'title', type: 'text', sampleValue: 'Hello World' }
+            ],
+            htmlContent: defaultHtml,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         } as Template;
@@ -48,8 +80,6 @@ export default function EditorPage() {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
       <TemplateEditor initialData={template} isNewTemplate={id === 'new'} />
-    </DndProvider>
   )
 }

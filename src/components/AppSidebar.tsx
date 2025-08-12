@@ -14,8 +14,6 @@ import {
 import {
   FileText,
   PlusSquare,
-  LayoutTemplate,
-  Code2,
 } from "lucide-react"
 import { usePathname } from 'next/navigation'
 import Link from "next/link"
@@ -25,6 +23,10 @@ export function AppSidebar() {
 
   const isMenuItemActive = (path: string) => {
     if (path === '/') return pathname === path;
+    // For "new" button, check if the path starts with /editor
+    if (path.endsWith('/new')) {
+      return pathname.startsWith('/editor');
+    }
     return pathname.startsWith(path);
   }
 
@@ -41,18 +43,10 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/editor/designer/new">
-              <SidebarMenuButton tooltip="Designer Template" isActive={isMenuItemActive('/editor/designer')}>
-                <LayoutTemplate />
-                <span>Designer Template</span>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/editor/code/new">
-              <SidebarMenuButton tooltip="Code-only Template" isActive={isMenuItemActive('/editor/code')}>
-                <Code2 />
-                <span>Code-only Template</span>
+            <Link href="/editor/new">
+              <SidebarMenuButton tooltip="New Template" isActive={isMenuItemActive('/editor/new')}>
+                <PlusSquare />
+                <span>New Template</span>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

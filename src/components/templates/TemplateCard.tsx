@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from "react";
@@ -17,59 +18,58 @@ interface TemplateCardProps {
 
 const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
   const lastUpdated = new Date(template.updatedAt).toLocaleDateString();
-  const hasVisualElements = template.elements && template.elements.length > 0;
-  const editUrl = hasVisualElements ? `/editor/designer/${template.id}` : `/editor/code/${template.id}`;
+  const editUrl = `/editor/${template.id}`;
 
 
   return (
     <Card className="flex flex-col transition-shadow duration-300 hover:shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex justify-between items-start">
-          <span className="text-primary">{template.name}</span>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={editUrl}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-              <AlertDialogTrigger asChild>
-                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                 </DropdownMenuItem>
-              </AlertDialogTrigger>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </CardTitle>
-        <CardDescription>Last updated on {lastUpdated}</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-grow">
-        <p className="text-sm text-muted-foreground">
-          Contains {template.fields.length} dynamic field(s).
-        </p>
-      </CardContent>
-      <CardFooter className="flex justify-end gap-2">
-         <TemplatePreviewDialog template={template}>
-            <Button variant="outline">
-              <Eye className="mr-2 h-4 w-4" />
-              Preview
-            </Button>
-        </TemplatePreviewDialog>
-        <Link href={editUrl} passHref>
-          <Button>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-        </Link>
-      </CardFooter>
       <AlertDialog>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-start">
+            <span className="text-primary">{template.name}</span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href={editUrl}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </Link>
+                </DropdownMenuItem>
+                <AlertDialogTrigger asChild>
+                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                   </DropdownMenuItem>
+                </AlertDialogTrigger>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </CardTitle>
+          <CardDescription>Last updated on {lastUpdated}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <p className="text-sm text-muted-foreground">
+            Contains {template.fields.length} dynamic field(s).
+          </p>
+        </CardContent>
+        <CardFooter className="flex justify-end gap-2">
+           <TemplatePreviewDialog template={template}>
+              <Button variant="outline">
+                <Eye className="mr-2 h-4 w-4" />
+                Preview
+              </Button>
+          </TemplatePreviewDialog>
+          <Link href={editUrl} passHref>
+            <Button>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          </Link>
+        </CardFooter>
         <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>

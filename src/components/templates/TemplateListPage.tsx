@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { type FC } from "react";
 import { Button } from "@/components/ui/button";
-import { FileText, LayoutTemplate, Code2 } from "lucide-react";
+import { FileText, PlusSquare } from "lucide-react";
 import TemplateCard from "./TemplateCard";
 import { useTemplates } from "@/hooks/use-templates";
 
@@ -21,16 +21,10 @@ const TemplateListPage: FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-2 mt-4 sm:mt-0">
-            <Link href="/editor/designer/new" passHref>
+            <Link href="/editor/new" passHref>
               <Button>
-                <LayoutTemplate className="mr-2 h-4 w-4" />
-                New Designer Template
-              </Button>
-            </Link>
-             <Link href="/editor/code/new" passHref>
-              <Button variant="secondary">
-                <Code2 className="mr-2 h-4 w-4" />
-                New Code Template
+                <PlusSquare className="mr-2 h-4 w-4" />
+                New Template
               </Button>
             </Link>
           </div>
@@ -55,16 +49,10 @@ const TemplateListPage: FC = () => {
                 Get started by creating a new template.
               </p>
               <div className="flex justify-center items-center gap-2 mt-6">
-                <Link href="/editor/designer/new" passHref>
+                <Link href="/editor/new" passHref>
                   <Button>
-                    <LayoutTemplate className="mr-2 h-4 w-4" />
-                    Create Designer Template
-                  </Button>
-                </Link>
-                 <Link href="/editor/code/new" passHref>
-                  <Button variant="secondary">
-                    <Code2 className="mr-2 h-4 w-4" />
-                    Create Code Template
+                    <PlusSquare className="mr-2 h-4 w-4" />
+                    Create New Template
                   </Button>
                 </Link>
               </div>
