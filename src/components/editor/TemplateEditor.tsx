@@ -114,46 +114,49 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   const [elements, setElements] = useState<TemplateElement[]>(initialData.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   
-  const initialHtml = useMemo(() => {
-    if (initialData.htmlContent) {
-        return initialData.htmlContent;
-    }
-    return generateHtmlForTemplate({...(initialData || {}), name, fields, elements});
-  }, [initialData, name, fields, elements]);
-  
-  const [htmlContent, setHtmlContent] = useState(initialHtml);
+  const [htmlContent, setHtmlContent] = useState('');
   const [activeTab, setActiveTab] = useState("visual");
   
   useEffect(() => {
     setName(initialData.name);
     setFields(initialData.fields || []);
-    setElements(initialData.htmlContent ? parseHtmlToElements(initialData.htmlContent, initialData.fields) : initialData.elements || []);
-    setHtmlContent(initialData.htmlContent || generateHtmlForTemplate({ ...initialData, name: initialData.name, fields: initialData.fields, elements: initialData.elements }));
+    
+    const initialElements = initialData.htmlContent 
+      ? parseHtmlToElements(initialData.htmlContent, initialData.fields || []) 
+      : (initialData.elements || []);
+    setElements(initialElements);
+    
+    const initialHtml = initialData.htmlContent 
+      ? initialData.htmlContent 
+      : generateHtmlForTemplate({ ...initialData, elements: initialElements });
+    setHtmlContent(initialHtml);
   }, [initialData]);
 
-  useEffect(() => {
-    if (activeTab === 'code') {
+  const handleTabChange = (value: string) => {
+    if (value === 'code') {
+      // visual -> code
       setHtmlContent(generateHtmlForTemplate({ name, fields, elements }));
-    } else if (activeTab === 'visual') {
+    } else if (value === 'visual') {
+      // code -> visual
       const newElements = parseHtmlToElements(htmlContent, fields);
       setElements(newElements);
     }
-  }, [name, fields, elements, activeTab, htmlContent]);
-
+    setActiveTab(value);
+  }
 
   const selectedElement = elements.find((el) => el.id === selectedElementId) || null;
   
   const getCurrentTemplateState = (): Omit<Template, 'createdAt' | 'updatedAt'> => {
     const isCodeEditing = activeTab === 'code';
     const finalElements = isCodeEditing ? parseHtmlToElements(htmlContent, fields) : elements;
-    const generatedHtml = generateHtmlForTemplate({ name, fields, elements: finalElements });
+    const generatedHtml = isCodeEditing ? htmlContent : generateHtmlForTemplate({ name, fields, elements });
 
     return {
       id: initialData.id,
       name,
       fields,
       elements: finalElements, 
-      htmlContent: isCodeEditing ? htmlContent : generatedHtml,
+      htmlContent: generatedHtml,
     }
   }
 
@@ -244,7 +247,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           </div>
 
           <div className="flex flex-col overflow-hidden bg-background rounded-lg border">
-             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-grow flex-col">
+             <Tabs value={activeTab} onValueChange={handleTabChange} className="flex flex-grow flex-col">
                 <div className="flex justify-center p-2 border-b">
                     <TabsList>
                       <TabsTrigger value="visual">Visual Editor</TabsTrigger>
