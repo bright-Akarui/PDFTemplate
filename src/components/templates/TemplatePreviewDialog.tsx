@@ -125,14 +125,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
               )}
             </div>
           </div>
-          <div className="md:col-span-2 border rounded-lg overflow-y-auto bg-muted/60 flex items-center justify-center p-4">
-            <div
+          <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center p-4">
+             <div
               className="bg-white shadow-lg"
               style={{
                 width: '794px',
                 height: '1123px',
                 transform: 'scale(0.5)',
-                transformOrigin: 'top left',
+                transformOrigin: 'top center',
               }}
             >
               <iframe
