@@ -30,6 +30,7 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
   const [{ canDrop, isOver }, drop] = useDrop(() => ({
     accept: [ItemTypes.TEXT, ItemTypes.IMAGE],
     drop: (item: { type: 'text' | 'image' }, monitor) => {
+      const delta = monitor.getClientOffset();
       const dropTarget = document.getElementById("editor-canvas-wrapper")?.getBoundingClientRect();
       const canvasEl = document.getElementById("editor-canvas");
       if (!delta || !dropTarget || !canvasEl) return;
@@ -38,7 +39,6 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
       const matrix = new DOMMatrixReadOnly(style.transform);
       const scale = matrix.m11;
 
-      const delta = monitor.getClientOffset();
 
       if (delta && dropTarget) {
         const top = (delta.y - dropTarget.top) / scale;
