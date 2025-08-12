@@ -1,11 +1,12 @@
 
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -14,6 +15,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import type { Template } from "@/lib/types"
 import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { Printer } from "lucide-react"
 
 interface TemplatePreviewDialogProps {
   template: Template
@@ -22,6 +25,7 @@ interface TemplatePreviewDialogProps {
 
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     setFormData(template.fields.reduce((acc, field) => {
@@ -90,6 +94,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     return populatedHtml;
   }, [template.htmlContent, formData]);
 
+  const handlePrint = () => {
+    const iframe = iframeRef.current;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.focus(); // Required for some browsers
+      iframe.contentWindow.print();
+    }
+  };
+
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -142,6 +154,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
               }}
             >
               <iframe
+                ref={iframeRef}
                 srcDoc={finalHtml}
                 title="Template Preview"
                 className="w-full h-full border-0 bg-white shadow-lg"
@@ -157,6 +170,12 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
             </div>
           </div>
         </div>
+         <DialogFooter className="mt-4">
+            <Button onClick={handlePrint} variant="outline">
+              <Printer className="mr-2 h-4 w-4" />
+              Print
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
