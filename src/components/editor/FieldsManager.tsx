@@ -35,6 +35,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 interface FieldsManagerProps {
+  templateId: string;
   fields: Field[];
   setFields: (fields: Field[]) => void;
 }
@@ -67,10 +68,10 @@ const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, contr
     )
 }
 
-const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
-  const { control, handleSubmit, watch, getValues, reset } = useForm<FormData>({
+const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields, setFields }) => {
+  const { control, handleSubmit, watch, getValues, reset, formState } = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fields: [] },
+    defaultValues: { fields: fields },
   });
 
   const { fields: formFields, append, remove } = useFieldArray({
@@ -78,18 +79,23 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
     name: "fields",
   });
   
+  // Only reset the form when the template itself changes (by checking its ID).
+  // This prevents resetting on every state change within the editor.
   useEffect(() => {
-    // When the external fields prop changes, reset the form with the new values.
     reset({ fields });
-  }, [fields, reset]);
+  }, [templateId, reset]);
 
+  // Subscribe to form changes and notify the parent component.
   useEffect(() => {
-    // Subscribe to form changes and notify the parent component.
     const subscription = watch((value) => {
-        setFields(value.fields as Field[]);
+        // The form is considered "dirty" only after the user has interacted with it.
+        // We only update the parent state if there's a change initiated by the user.
+        if (formState.isDirty) {
+          setFields(value.fields as Field[]);
+        }
     });
     return () => subscription.unsubscribe();
-  }, [watch, setFields]);
+  }, [watch, setFields, formState.isDirty]);
   
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", type: "text", sampleValue: "" });
@@ -104,7 +110,7 @@ const FieldsManager: FC<FieldsManagerProps> = ({ fields, setFields }) => {
         <CardDescription>Define variables for your template.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form onChange={handleSubmit(() => {})}>
             <div className="space-y-4">
             {formFields.length > 0 ? formFields.map((field, index) => (
                 <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useCallback, useMemo, useEffect } from "react";
@@ -262,7 +263,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
         <main className="grid flex-1 gap-4 overflow-hidden p-4 grid-cols-[320px_1fr_300px]">
           <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2">
             <EditorToolbar />
-            <FieldsManager fields={fields} setFields={setFields} />
+            <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
           </div>
 
           <div className="flex flex-col overflow-hidden bg-background rounded-lg border">
