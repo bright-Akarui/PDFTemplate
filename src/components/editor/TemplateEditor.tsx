@@ -74,8 +74,8 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   const { saveTemplate, getTemplate } = useTemplates();
 
   const [name, setName] = useState(initialData.name);
-  const [fields, setFields] = useState<Field[]>(initialData.fields);
-  const [elements, setElements] = useState<TemplateElement[]>(initialData.elements);
+  const [fields, setFields] = useState<Field[]>(initialData.fields || []);
+  const [elements, setElements] = useState<TemplateElement[]>(initialData.elements || []);
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   
   const initialHtml = useMemo(() => {
@@ -91,8 +91,8 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
   // When initialData changes, update the state
   useEffect(() => {
     setName(initialData.name);
-    setFields(initialData.fields);
-    setElements(initialData.elements);
+    setFields(initialData.fields || []);
+    setElements(initialData.elements || []);
     setHtmlContent(initialData.htmlContent || generateHtmlForTemplate({ ...initialData, name: initialData.name, fields: initialData.fields, elements: initialData.elements }));
   }, [initialData]);
 
@@ -203,21 +203,21 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           </div>
         </header>
 
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr_300px] gap-4 p-4 overflow-hidden">
+        <div className="grid flex-1 gap-4 overflow-hidden p-4 md:grid-cols-[280px_1fr] lg:grid-cols-[300px_1fr_300px]">
           {/* Left Panel */}
-          <div className="flex flex-col gap-4 bg-background rounded-lg border overflow-y-auto">
+          <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background">
             <EditorToolbar />
             <FieldsManager fields={fields} setFields={setFields} />
           </div>
 
           {/* Center Panel */}
-          <div className="flex flex-col bg-background rounded-lg border overflow-hidden">
-             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-grow">
+          <div className="flex flex-col overflow-hidden rounded-lg border bg-background">
+             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-grow flex-col">
                 <TabsList className="shrink-0 self-center my-2">
                   <TabsTrigger value="visual">Visual Editor</TabsTrigger>
                   <TabsTrigger value="code">Code Editor</TabsTrigger>
                 </TabsList>
-                <TabsContent value="visual" className="flex-grow flex items-start justify-center overflow-auto p-4">
+                <TabsContent value="visual" className="flex flex-grow items-start justify-center overflow-auto p-4">
                   <EditorCanvas
                     elements={elements}
                     onDropElement={addElement}
@@ -230,7 +230,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
                   <Textarea
                       value={htmlContent}
                       onChange={(e) => setHtmlContent(e.target.value)}
-                      className="flex-grow w-full h-full font-mono text-xs resize-none"
+                      className="flex-grow w-full h-full resize-none font-mono text-xs"
                       placeholder="Enter your HTML and CSS here..."
                   />
               </TabsContent>
@@ -238,7 +238,7 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
           </div>
           
           {/* Right Panel */}
-          <div className="bg-background rounded-lg border overflow-y-auto">
+          <div className="overflow-y-auto rounded-lg border bg-background">
              <PropertiesPanel
                 element={selectedElement}
                 fields={fields}

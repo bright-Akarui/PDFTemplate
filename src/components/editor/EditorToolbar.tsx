@@ -14,7 +14,7 @@ interface DraggableItemProps {
 
 const DraggableToolbarItem: FC<DraggableItemProps> = ({ type, children }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
-    type: type,
+    type: type === 'text' ? ItemTypes.TEXT : ItemTypes.IMAGE,
     item: { type },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
