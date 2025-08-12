@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { FC } from "react";
@@ -7,13 +8,13 @@ import { ItemTypes } from "@/lib/dnd";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DraggableItemProps {
-  type: keyof typeof ItemTypes;
+  type: 'text' | 'image';
   children: React.ReactNode;
 }
 
 const DraggableToolbarItem: FC<DraggableItemProps> = ({ type, children }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
-    type: ItemTypes[type],
+    type: type,
     item: { type },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
@@ -38,11 +39,11 @@ const EditorToolbar: FC = () => {
         <CardTitle>Toolbox</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <DraggableToolbarItem type="TEXT">
+        <DraggableToolbarItem type="text">
           <Text className="w-5 h-5 text-primary" />
           <span className="font-medium">Text</span>
         </DraggableToolbarItem>
-        <DraggableToolbarItem type="IMAGE">
+        <DraggableToolbarItem type="image">
           <ImageIcon className="w-5 h-5 text-primary" />
           <span className="font-medium">Image</span>
         </DraggableToolbarItem>
