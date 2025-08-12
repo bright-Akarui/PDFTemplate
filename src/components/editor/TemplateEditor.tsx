@@ -51,14 +51,14 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
 
     if (isNewTemplate) {
         const newPath = `/editor/${templateToSave.id}`;
-        router.replace(newPath); // use replace to avoid back-navigation to 'new' page
+        router.replace(newPath);
     } else {
         router.refresh();
     }
   };
   
   return (
-      <div className="flex flex-col h-full w-full bg-muted/40">
+      <div className="flex flex-col h-full">
         <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 lg:px-6">
           <div className="flex items-center gap-2 md:gap-4">
             <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => router.push('/')}>
@@ -82,21 +82,23 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           </div>
         </header>
 
-        <main className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden p-4">
-          {/* Code Editor Section (Left) */}
-          <div className="flex-1 flex flex-col min-h-0 lg:w-3/4 bg-background rounded-lg border">
-              <Textarea
-                  value={htmlContent}
-                  onChange={(e) => setHtmlContent(e.target.value)}
-                  className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea p-4"
-                  placeholder="Enter your HTML and CSS here..."
-              />
-          </div>
+        <main className="p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+            {/* Code Editor Section (Left, larger part) */}
+            <div className="lg:col-span-3 flex flex-col min-h-[calc(100vh-10rem)] bg-background rounded-lg border">
+                <Textarea
+                    value={htmlContent}
+                    onChange={(e) => setHtmlContent(e.target.value)}
+                    className="flex-grow w-full h-full resize-none font-mono text-sm border-0 focus-visible:ring-0 code-editor-textarea p-4"
+                    placeholder="Enter your HTML and CSS here..."
+                />
+            </div>
 
-          {/* Fields Manager Section (Right) */}
-          <div className="lg:w-1/4 flex flex-col gap-4 min-h-0">
-            <div className="overflow-y-auto rounded-lg border bg-background h-full">
-              <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
+            {/* Fields Manager Section (Right, smaller part) */}
+            <div className="lg:col-span-1 flex flex-col gap-4 min-h-0">
+              <div className="overflow-y-auto rounded-lg border bg-background h-full">
+                <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
+              </div>
             </div>
           </div>
         </main>
