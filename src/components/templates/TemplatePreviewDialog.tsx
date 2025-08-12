@@ -50,6 +50,26 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
       }).join('');
   });
 
+  // Inject a script to handle printing via postMessage
+  const printScript = `
+    <script>
+      window.addEventListener('message', function(event) {
+        if (event.data === 'print-template') {
+          window.focus();
+          window.print();
+        }
+      }, false);
+    </script>
+  `;
+  
+  // Add the script to the head or body of the HTML
+  if (populatedHtml.includes('</body>')) {
+    populatedHtml = populatedHtml.replace('</body>', printScript + '</body>');
+  } else {
+    populatedHtml += printScript;
+  }
+
+
   return populatedHtml;
 };
 
@@ -111,8 +131,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   const handlePrint = () => {
     const iframe = iframeRef.current;
     if (iframe && iframe.contentWindow) {
-      iframe.contentWindow.focus(); 
-      iframe.contentWindow.print();
+      iframe.contentWindow.postMessage('print-template', '*');
     }
   };
   
