@@ -120,16 +120,26 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                   />
                 </div>
               ))}
+              {template.fields.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center">No dynamic fields.</p>
+              )}
             </div>
           </div>
-          <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center">
-            <iframe
-              srcDoc={finalHtml}
-              title="Template Preview"
-              className="w-[794px] h-[1123px] border-0 bg-white shadow-lg"
-              style={{ transform: 'scale(0.4)', transformOrigin: 'center' }}
-              sandbox="allow-same-origin allow-scripts"
-            />
+          <div className="md:col-span-2 border rounded-lg overflow-hidden bg-muted/60 flex items-center justify-center p-4">
+            <div
+                className="w-[794px] h-[1123px] bg-white shadow-lg"
+                style={{
+                    transform: 'scale(0.4)',
+                    transformOrigin: 'top center',
+                }}
+            >
+                <iframe
+                    srcDoc={finalHtml}
+                    title="Template Preview"
+                    className="w-full h-full border-0"
+                    sandbox="allow-same-origin allow-scripts"
+                />
+            </div>
           </div>
         </div>
       </DialogContent>
