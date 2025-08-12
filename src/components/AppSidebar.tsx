@@ -41,7 +41,7 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/editor/designer/new" legacyBehavior passHref>
+            <Link href="/editor/designer/new">
               <SidebarMenuButton tooltip="Designer Template" isActive={isMenuItemActive('/editor/designer')}>
                 <LayoutTemplate />
                 <span>Designer Template</span>
@@ -49,7 +49,7 @@ export function AppSidebar() {
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/editor/code/new" legacyBehavior passHref>
+            <Link href="/editor/code/new">
               <SidebarMenuButton tooltip="Code-only Template" isActive={isMenuItemActive('/editor/code')}>
                 <Code2 />
                 <span>Code-only Template</span>
@@ -57,7 +57,7 @@ export function AppSidebar() {
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/" legacyBehavior passHref>
+            <Link href="/">
               <SidebarMenuButton tooltip="All Templates" isActive={isMenuItemActive('/')}>
                 <FileText />
                 <span>All Templates</span>
