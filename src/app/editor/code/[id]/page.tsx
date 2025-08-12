@@ -13,13 +13,16 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 const defaultHtml = `<html>
   <head>
     <style>
-      body { font-family: sans-serif; }
-      .template-container { 
-        position: relative; 
-        width: 210mm; 
-        height: 297mm; 
-        background: white; 
-        margin: auto; 
+      body { 
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+      }
+      .page {
+        width: 210mm;
+        min-height: 297mm;
+        background: white;
+        margin: 20px auto;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
         box-sizing: border-box;
         padding: 40px;
@@ -28,10 +31,10 @@ const defaultHtml = `<html>
     </style>
   </head>
   <body>
-    <div class="template-container">
+    <div class="page">
       <!-- Add your elements here -->
       <h1>{{.title}}</h1>
-      <p>This is a code-only template.</p>
+      <p>This is a code-only template. You can use Go template syntax for variables.</p>
     </div>
   </body>
 </html>`;
@@ -48,7 +51,7 @@ export default function CodeEditorPage() {
         return {
             id: `t-${Date.now()}`,
             name: "New Code Template",
-            elements: [],
+            elements: [], // Code-only templates start with no visual elements
             fields: [
               { id: 'f1', name: 'title', type: 'text', sampleValue: 'Hello World' }
             ],

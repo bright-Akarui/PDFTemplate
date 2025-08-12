@@ -70,11 +70,13 @@ const PageStyling: FC<{
 
 
 const generateHtmlForTemplate = (template: Partial<Template>): string => {
-    if (template.htmlContent && !template.elements?.length && !template.containerStyle) {
+    // For pure code templates that might have been edited, always prefer the stored htmlContent.
+    if (template.htmlContent && (!template.elements || template.elements.length === 0)) {
         return template.htmlContent;
     }
 
-    if (!template.elements) return "";
+    if (!template.elements || template.elements.length === 0) return "";
+
 
     const elementsHtml = template.elements
       .map((el) => {
@@ -149,7 +151,17 @@ const parseHtmlToElements = (html: string, fields: Field[]): { elements: Templat
   const doc = parser.parseFromString(html, 'text/html');
   const parsedElements: TemplateElement[] = [];
 
-  doc.querySelectorAll('.template-container > [data-id]').forEach(node => {
+  const containerSelector = '.template-container';
+  const containerEl = doc.querySelector(containerSelector) as HTMLElement;
+
+  if (!containerEl) {
+     // If no .template-container is found, it might be a free-form code template.
+     // In this case, we don't parse elements for the visual editor.
+     return { elements: [], containerStyle: {} };
+  }
+
+
+  containerEl.querySelectorAll(':scope > [data-id]').forEach(node => {
     const el = node as HTMLElement;
     const style: CSSProperties = {};
     for (let i = 0; i < el.style.length; i++) {
@@ -176,14 +188,11 @@ const parseHtmlToElements = (html: string, fields: Field[]): { elements: Templat
     });
   });
 
-  const containerEl = doc.querySelector('.template-container') as HTMLElement;
   const containerStyle: CSSProperties = {};
-  if (containerEl) {
-     for (let i = 0; i < containerEl.style.length; i++) {
-        const propName = containerEl.style[i];
-        const camelCaseName = propName.replace(/-([a-z])/g, g => g[1].toUpperCase());
-        containerStyle[camelCaseName as keyof CSSProperties] = containerEl.style.getPropertyValue(propName);
-    }
+   for (let i = 0; i < containerEl.style.length; i++) {
+      const propName = containerEl.style[i];
+      const camelCaseName = propName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+      containerStyle[camelCaseName as keyof CSSProperties] = containerEl.style.getPropertyValue(propName);
   }
 
 
@@ -214,9 +223,15 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editor
     const initialHtml = initialData.htmlContent || generateHtmlForTemplate({ ...initialData, fields: initialFields });
     setHtmlContent(initialHtml);
     
-    const { elements: initialElements, containerStyle: initialContainerStyle } = parseHtmlToElements(initialHtml, initialFields);
-    setElements(initialElements);
-    setContainerStyle(initialContainerStyle);
+    // Only parse elements if it's a designer template.
+    if (editorType === 'designer') {
+      const { elements: initialElements, containerStyle: initialContainerStyle } = parseHtmlToElements(initialHtml, initialFields);
+      setElements(initialElements);
+      setContainerStyle(initialContainerStyle);
+    } else {
+      setElements([]);
+      setContainerStyle({});
+    }
     
     if (editorType === 'code') {
       setActiveTab('code');
@@ -228,7 +243,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editor
   }, [initialData, editorType]);
 
   const handleTabChange = (value: string) => {
-    if (isInitializing) return;
+    if (isInitializing || editorType === 'code') return;
     
     if (activeTab === 'visual' && value === 'code') {
       const currentTemplateState = { name, fields, elements, htmlContent: '', containerStyle };
@@ -256,10 +271,16 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editor
 
     if (isCodeEditing) {
         generatedHtml = htmlContent;
-        const parsed = parseHtmlToElements(htmlContent, fields);
-        finalElements = parsed.elements;
-        finalContainerStyle = parsed.containerStyle;
-    } else {
+        // For code-only templates, elements array should be empty to signify it's not for the visual editor.
+        if (editorType === 'code') {
+          finalElements = [];
+          finalContainerStyle = {};
+        } else {
+          const parsed = parseHtmlToElements(htmlContent, fields);
+          finalElements = parsed.elements;
+          finalContainerStyle = parsed.containerStyle;
+        }
+    } else { // Visual editor is active
         finalElements = elements;
         finalContainerStyle = containerStyle;
         const stateForHtmlGen = { name, fields, elements, htmlContent: '', containerStyle };
@@ -361,10 +382,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editor
           "grid flex-1 gap-4 overflow-hidden p-4",
            editorType === 'designer' ? "grid-cols-[320px_1fr_300px]" : "grid-cols-[320px_1fr]"
         )}>
-          <div className={cn(
-            "flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2",
-            editorType === 'code' && "col-span-1"
-          )}>
+          <div className="flex flex-col gap-4 overflow-y-auto rounded-lg border bg-background p-2">
             {editorType === 'designer' && <EditorToolbar />}
             <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
             {editorType === 'designer' && <PageStyling style={containerStyle} setStyle={setContainerStyle} />}
@@ -378,7 +396,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editor
                       <TabsTrigger value="code">Code Editor</TabsTrigger>
                     </TabsList>
                 </div>
-                <TabsContent value="visual" className="flex-grow overflow-y-auto bg-muted/60">
+                <TabsContent value="visual" className="flex-grow overflow-y-auto bg-muted/60" hidden={editorType === 'code'}>
                    <div className="flex-grow p-4 mx-auto w-full h-full flex items-start justify-center">
                       <EditorCanvas
                         elements={elements}
@@ -391,7 +409,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; editor
                       />
                    </div>
                 </TabsContent>
-                 <TabsContent value="code" className="flex-grow flex flex-col p-2">
+                 <TabsContent value="code" className="flex-grow flex flex-col p-2 mt-0">
                   <Textarea
                       value={htmlContent}
                       onChange={(e) => setHtmlContent(e.target.value)}

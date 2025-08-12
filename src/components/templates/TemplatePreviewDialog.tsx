@@ -26,6 +26,24 @@ interface TemplatePreviewDialogProps {
 const ITEMS_PER_PAGE = 15; // Adjust as needed for A4 layout
 
 const generatePagedHtml = (templateHtml: string, formData: Record<string, any>, fields: Field[]): string => {
+  // Check if this is a designer template by looking for a template container
+  const isDesignerTemplate = /<div class="template-container"/.test(templateHtml);
+
+  // If it's NOT a designer template, it's a code-only template.
+  // Just replace variables and return. Do not attempt pagination.
+  if (!isDesignerTemplate) {
+    let populatedHtml = templateHtml;
+    Object.entries(formData).forEach(([key, value]) => {
+      if (typeof value !== 'object' || value === null) {
+        const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
+        populatedHtml = populatedHtml.replace(regex, String(value ?? ""));
+      }
+    });
+    // For code-only templates, we assume any {{range}} blocks are handled by the user's own logic if any.
+    return populatedHtml;
+  }
+  
+  // The rest of the logic is for designer templates with pagination.
   const parser = new DOMParser();
   const doc = parser.parseFromString(templateHtml, 'text/html');
   const body = doc.body;
@@ -127,8 +145,13 @@ const generatePagedHtml = (templateHtml: string, formData: Record<string, any>, 
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [previewContent, setPreviewContent] = useState('');
+
+  // Determine if it's a pure code template (no visual elements defined)
+  const isCodeOnlyTemplate = !template.elements || template.elements.length === 0;
 
   useEffect(() => {
+    // Populate form data from sample values
     setFormData(template.fields.reduce((acc, field) => {
       if (field.type === 'table') {
         try {
@@ -144,23 +167,53 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     }, {} as Record<string, any>));
   }, [template.fields]);
 
+
+  useEffect(() => {
+    // Generate the final HTML for the preview
+    if (!template.htmlContent) {
+      setPreviewContent('');
+      return;
+    }
+    
+    if (isCodeOnlyTemplate) {
+      // For code-only templates, simply replace variables and render the content.
+      // This allows free-form HTML/CSS/JS to work as intended.
+      let content = template.htmlContent;
+      Object.entries(formData).forEach(([key, value]) => {
+        if (typeof value !== 'object' && !Array.isArray(value)) {
+          const regex = new RegExp(`\\{\\{\\s*\\.${key}\\s*\\}\\}`, "g");
+          content = content.replace(regex, String(value ?? ''));
+        }
+      });
+      // A simple way to represent table data for code-only templates is to make it available as a JSON string
+      const tableField = template.fields.find(f => f.type === 'table');
+      if (tableField && formData[tableField.name]) {
+         const regex = new RegExp(`\\{\\{\\s*\\.${tableField.name}\\s*\\}\\}`, "g");
+         content = content.replace(regex, JSON.stringify(formData[tableField.name]));
+      }
+
+      setPreviewContent(content);
+
+    } else {
+      // For designer templates, use the pagination logic.
+      setPreviewContent(generatePagedHtml(template.htmlContent, formData, template.fields));
+    }
+  }, [template.htmlContent, formData, template.fields, isCodeOnlyTemplate]);
+
+
   const handleInputChange = (fieldName: string, value: string, type: string) => {
     setFormData((prev) => {
       if (type === 'table') {
         try {
           return { ...prev, [fieldName]: JSON.parse(value) };
         } catch {
+          // If JSON is invalid during typing, keep it as a string
           return { ...prev, [fieldName]: value };
         }
       }
       return { ...prev, [fieldName]: value };
     });
   };
-
-  const finalHtml = useMemo(() => {
-    if (!template.htmlContent) return '';
-    return generatePagedHtml(template.htmlContent, formData, template.fields);
-  }, [template.htmlContent, formData, template.fields]);
 
   const handlePrint = () => {
     const iframe = iframeRef.current;
@@ -170,6 +223,12 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     }
   };
 
+  const iframeSrcDoc = isCodeOnlyTemplate ? previewContent : `<!DOCTYPE html><html><head><style>body{margin:0;}</style></head><body>${previewContent}</body></html>`
+  const iframeSandboxOptions = isCodeOnlyTemplate 
+      ? "allow-scripts allow-same-origin allow-modals" 
+      : "allow-same-origin allow-modals";
+
+
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -177,7 +236,10 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
         <DialogHeader>
           <DialogTitle>Preview: {template.name}</DialogTitle>
           <DialogDescription>
-            Fill in the sample data to see a live preview of your template. Pagination is applied automatically.
+            {isCodeOnlyTemplate 
+              ? "Live preview of your code. Variables are replaced with sample data."
+              : "Fill in the sample data to see a live preview of your template. Pagination is applied automatically."
+            }
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow min-h-0">
@@ -220,14 +282,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
             >
               <iframe
                 ref={iframeRef}
-                srcDoc={finalHtml}
+                srcDoc={previewContent}
                 title="Template Preview"
                 className="w-full h-full border-0 bg-white shadow-lg"
                 style={{
                   transform: 'scale(0.9)', 
                   transformOrigin: 'top center'
                 }}
-                sandbox="allow-same-origin allow-modals"
+                sandbox={iframeSandboxOptions}
               />
             </div>
           </div>
