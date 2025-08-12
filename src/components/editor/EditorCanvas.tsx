@@ -30,8 +30,8 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
   const [{ canDrop, isOver }, drop] = useDrop(() => ({
     accept: [ItemTypes.TEXT, ItemTypes.IMAGE],
     drop: (item: { type: 'text' | 'image' }, monitor) => {
-      const delta = monitor.getSourceClientOffset();
       const dropTarget = document.getElementById("editor-canvas")?.getBoundingClientRect();
+      const delta = monitor.getClientOffset();
 
       if (delta && dropTarget) {
         const top = delta.y - dropTarget.top;
@@ -55,7 +55,7 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
         if (e.target === e.currentTarget) onSelectElement(null);
       }}
       className={cn(
-        "relative bg-white shadow-lg overflow-hidden transform scale-90 origin-center mx-auto",
+        "relative bg-white shadow-lg",
         "transition-all duration-200",
         isActive ? 'outline-dashed outline-2 outline-offset-4 outline-primary' : '',
         canDrop ? 'bg-primary/5' : ''

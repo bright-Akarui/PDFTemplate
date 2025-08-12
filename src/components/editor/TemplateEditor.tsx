@@ -71,7 +71,7 @@ const generateHtmlForTemplate = (template: Partial<Template>): string => {
 const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { saveTemplate, getTemplate } = useTemplates();
+  const { saveTemplate } = useTemplates();
 
   const [name, setName] = useState(initialData.name);
   const [fields, setFields] = useState<Field[]>(initialData.fields || []);
@@ -203,24 +203,26 @@ const TemplateEditor: FC<TemplateEditorProps> = ({ initialData, isNewTemplate })
             <FieldsManager fields={fields} setFields={setFields} />
           </div>
 
-          <div className="flex flex-col overflow-hidden">
+          <div className="flex flex-col overflow-hidden bg-background rounded-lg border">
              <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-grow flex-col">
-                <div className="flex justify-center p-2 bg-muted/40 rounded-t-lg">
+                <div className="flex justify-center p-2 border-b">
                     <TabsList>
                       <TabsTrigger value="visual">Visual Editor</TabsTrigger>
                       <TabsTrigger value="code">Code Editor</TabsTrigger>
                     </TabsList>
                 </div>
-                <TabsContent value="visual" className="flex flex-grow items-start justify-center overflow-auto p-4 bg-muted/60 rounded-b-lg">
-                  <EditorCanvas
-                    elements={elements}
-                    onDropElement={addElement}
-                    onSelectElement={setSelectedElementId}
-                    onUpdateElementStyle={updateElementStyle}
-                    selectedElementId={selectedElementId}
-                  />
+                <TabsContent value="visual" className="flex-grow overflow-y-auto bg-muted/60">
+                   <div className="flex-grow p-4 mx-auto">
+                      <EditorCanvas
+                        elements={elements}
+                        onDropElement={addElement}
+                        onSelectElement={setSelectedElementId}
+                        onUpdateElementStyle={updateElementStyle}
+                        selectedElementId={selectedElementId}
+                      />
+                   </div>
                 </TabsContent>
-                 <TabsContent value="code" className="flex-grow flex flex-col p-2 bg-background rounded-b-lg border">
+                 <TabsContent value="code" className="flex-grow flex flex-col p-2">
                   <Textarea
                       value={htmlContent}
                       onChange={(e) => setHtmlContent(e.target.value)}
