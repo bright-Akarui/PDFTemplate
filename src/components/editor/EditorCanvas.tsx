@@ -30,12 +30,19 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
   const [{ canDrop, isOver }, drop] = useDrop(() => ({
     accept: [ItemTypes.TEXT, ItemTypes.IMAGE],
     drop: (item: { type: 'text' | 'image' }, monitor) => {
-      const dropTarget = document.getElementById("editor-canvas")?.getBoundingClientRect();
+      const dropTarget = document.getElementById("editor-canvas-wrapper")?.getBoundingClientRect();
+      const canvasEl = document.getElementById("editor-canvas");
+      if (!delta || !dropTarget || !canvasEl) return;
+      
+      const style = window.getComputedStyle(canvasEl);
+      const matrix = new DOMMatrixReadOnly(style.transform);
+      const scale = matrix.m11;
+
       const delta = monitor.getClientOffset();
 
       if (delta && dropTarget) {
-        const top = delta.y - dropTarget.top;
-        const left = delta.x - dropTarget.left;
+        const top = (delta.y - dropTarget.top) / scale;
+        const left = (delta.x - dropTarget.left) / scale;
         onDropElement(item.type, { top: `${top}px`, left: `${left}px`, position: 'absolute' });
       }
     },
@@ -48,33 +55,37 @@ const EditorCanvas: FC<EditorCanvasProps> = ({
   const isActive = canDrop && isOver;
 
   return (
-    <div
-      id="editor-canvas"
-      ref={drop}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onSelectElement(null);
-      }}
-      className={cn(
-        "relative bg-white shadow-lg",
-        "transition-all duration-200",
-        isActive ? 'outline-dashed outline-2 outline-offset-4 outline-primary' : '',
-        canDrop ? 'bg-primary/5' : ''
-      )}
-      style={{
-        width: `${A4_WIDTH_PX}px`,
-        height: `${A4_HEIGHT_PX}px`,
-      }}
-    >
-      {elements.map((el) => (
-        <CanvasElement
-          key={el.id}
-          element={el}
-          isSelected={selectedElementId === el.id}
-          onSelect={onSelectElement}
-          onUpdateStyle={onUpdateElementStyle}
-          canvasBounds={{ width: A4_WIDTH_PX, height: A4_HEIGHT_PX }}
-        />
-      ))}
+    <div id="editor-canvas-wrapper" className="w-full h-full flex items-center justify-center">
+        <div
+            id="editor-canvas"
+            ref={drop}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onSelectElement(null);
+            }}
+            className={cn(
+                "relative bg-white shadow-lg origin-top",
+                "transition-all duration-200",
+                isActive ? 'outline-dashed outline-2 outline-offset-4 outline-primary' : '',
+                canDrop ? 'bg-primary/5' : ''
+            )}
+            style={{
+                width: `${A4_WIDTH_PX}px`,
+                height: `${A4_HEIGHT_PX}px`,
+                transform: `scale(var(--canvas-scale, 0.75))`,
+                transformOrigin: 'top center',
+            }}
+        >
+        {elements.map((el) => (
+            <CanvasElement
+            key={el.id}
+            element={el}
+            isSelected={selectedElementId === el.id}
+            onSelect={onSelectElement}
+            onUpdateStyle={onUpdateElementStyle}
+            canvasBounds={{ width: A4_WIDTH_PX, height: A4_HEIGHT_PX }}
+            />
+        ))}
+        </div>
     </div>
   );
 };
