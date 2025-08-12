@@ -69,4 +69,8 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+  .code-editor-textarea {
+      @apply bg-gray-800 text-gray-200 font-mono text-sm;
+      caret-color: white;
+  }
 }

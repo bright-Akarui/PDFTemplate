@@ -14,6 +14,7 @@ import {
 import {
   FileText,
   PlusSquare,
+  LayoutPanelLeft
 } from "lucide-react"
 import { usePathname } from 'next/navigation'
 import Link from "next/link"
@@ -23,21 +24,23 @@ export function AppSidebar() {
 
   const isMenuItemActive = (path: string) => {
     if (path === '/') return pathname === path;
-    // For "new" button, check if the path starts with /editor
-    if (path.endsWith('/new')) {
-      return pathname.startsWith('/editor');
+    if (path.includes('/editor/')) {
+        return pathname.startsWith('/editor/');
     }
     return pathname.startsWith(path);
   }
 
   return (
-    <Sidebar>
+    <Sidebar className="w-full md:w-64">
       <SidebarHeader>
         <div className="flex items-center gap-2">
           <div className="bg-primary text-primary-foreground p-1.5 rounded-lg">
-            <FileText className="w-5 h-5" />
+            <LayoutPanelLeft className="w-5 h-5" />
           </div>
           <h1 className="text-xl font-semibold">TemplateFlow</h1>
+        </div>
+        <div className="md:hidden ml-auto">
+             <SidebarTrigger />
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -60,7 +63,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="hidden md:flex">
         <SidebarTrigger />
       </SidebarFooter>
     </Sidebar>
