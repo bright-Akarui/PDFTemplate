@@ -96,12 +96,6 @@ const MOCK_TEMPLATES: Template[] = [
         name: "Items",
         type: "table",
         sampleValue: '[{"Name":"Web Design","Qty":1,"Price":"1200","Total":"1200"},{"Name":"Hosting (1 year)","Qty":1,"Price":"100","Total":"100"}]',
-        itemSchema: [
-            { id: 'sf1', name: 'Name' },
-            { id: 'sf2', name: 'Qty' },
-            { id: 'sf3', name: 'Price' },
-            { id: 'sf4', name: 'Total' },
-        ]
       },
       { id: "f5", name: "grandTotal", type: "text", sampleValue: "1300.00" },
     ],

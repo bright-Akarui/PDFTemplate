@@ -22,12 +22,6 @@ const formSchema = z.object({
       name: z.string().min(1, "Name is required"),
       type: z.enum(["text", "number", "date", "image", "table"]),
       sampleValue: z.string().min(1, "Sample value is required"),
-      itemSchema: z.array(
-        z.object({
-          id: z.string(),
-          name: z.string().min(1, "Column name is required"),
-        })
-      ).optional(),
     })
   ),
 });
@@ -40,36 +34,8 @@ interface FieldsManagerProps {
   setFields: (fields: Field[]) => void;
 }
 
-const TableField: FC<{ nestIndex: number; control: any; }> = ({ nestIndex, control }) => {
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: `fields.${nestIndex}.itemSchema`
-    });
-
-    return (
-        <div className="space-y-2 mt-2 border-t pt-2">
-            <Label className="text-xs font-semibold">Table Columns</Label>
-            {fields.map((item, k) => (
-                <div key={item.id} className="flex items-center gap-2">
-                    <Controller
-                        name={`fields.${nestIndex}.itemSchema.${k}.name`}
-                        control={control}
-                        render={({ field }) => <Input {...field} placeholder="Column Name" className="h-8"/>}
-                    />
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => remove(k)} type="button">
-                        <Trash2 className="w-4 h-4 text-destructive"/>
-                    </Button>
-                </div>
-            ))}
-            <Button size="sm" variant="outline" className="w-full h-8" onClick={() => append({ name: '', id: `sf-${Date.now()}` })} type="button">
-                <Plus className="w-4 h-4 mr-2"/> Add Column
-            </Button>
-        </div>
-    )
-}
-
 const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFields, setFields }) => {
-  const { control, handleSubmit, watch, getValues, reset, trigger } = useForm<FormData>({
+  const { control, handleSubmit, watch, getValues, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: initialFields },
   });
@@ -84,7 +50,6 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
   }, [templateId, initialFields, reset]);
 
   const handleFormChange = () => {
-    trigger();
     const currentFields = getValues().fields;
     setFields(currentFields as Field[]);
   };
@@ -92,20 +57,13 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", type: "text", sampleValue: "" });
     // This is a workaround to ensure the state updates after appending
-    setTimeout(() => {
-        const currentFields = getValues().fields;
-        setFields(currentFields as Field[]);
-    }, 0);
+    setTimeout(handleFormChange, 0);
   };
   
   const removeField = (index: number) => {
     remove(index);
-    setTimeout(() => {
-        const currentFields = getValues().fields;
-        setFields(currentFields as Field[]);
-    }, 0);
+    setTimeout(handleFormChange, 0);
   }
-
 
   const watchedFields = watch("fields");
 
@@ -139,7 +97,6 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
                         render={({ field }) => (
                         <Select onValueChange={(value) => {
                             field.onChange(value);
-                            handleFormChange();
                         }} defaultValue={field.value}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -169,7 +126,6 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
                         />
                     )}
                 </div>
-                {watchedFields[index]?.type === 'table' && <TableField nestIndex={index} control={control} />}
                 </div>
             )) : (
                 <div className="text-center text-sm text-muted-foreground py-4">
