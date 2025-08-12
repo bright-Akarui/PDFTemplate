@@ -12,21 +12,13 @@ const TemplateListPage: FC = () => {
   const { templates, deleteTemplate } = useTemplates();
 
   return (
-      <div className="container mx-auto">
+      <div className="container mx-auto py-8">
         <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-primary">Your Templates</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Your Templates</h1>
             <p className="text-muted-foreground mt-1">
               Manage, edit, or create new document templates.
             </p>
-          </div>
-          <div className="flex items-center gap-2 mt-4 sm:mt-0">
-            <Link href="/editor/new" passHref>
-              <Button>
-                <PlusSquare className="mr-2 h-4 w-4" />
-                New Template
-              </Button>
-            </Link>
           </div>
         </header>
 

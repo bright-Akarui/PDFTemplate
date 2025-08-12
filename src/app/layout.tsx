@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { FileCode } from "lucide-react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -29,7 +31,21 @@ export default function RootLayout({
           inter.variable
         )}
       >
-        {children}
+        <div className="flex flex-col min-h-screen">
+          <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container flex h-14 items-center">
+              <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+                <FileCode className="h-6 w-6 text-primary" />
+                <span className="text-primary">Template</span><span className="font-light">Flow</span>
+              </Link>
+              <nav className="ml-auto flex items-center space-x-6 text-sm font-medium">
+                <Link href="/" className="transition-colors hover:text-primary">All Templates</Link>
+                <Link href="/editor/new" className="transition-colors hover:text-primary">New Template</Link>
+              </nav>
+            </div>
+          </header>
+          <main className="flex-1">{children}</main>
+        </div>
         <Toaster />
       </body>
     </html>
