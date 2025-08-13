@@ -92,6 +92,7 @@ export const useTemplates = () => {
         
         // Convert fields to the expected format string, removing client-side id.
         const apiFields = templateData.fields.map(f => {
+            // Ensure type is always 'string' as per new simplified requirement
             return { name: f.name, type: 'string', sampleValue: f.sampleValue };
         });
         formData.append('fields', JSON.stringify(apiFields));

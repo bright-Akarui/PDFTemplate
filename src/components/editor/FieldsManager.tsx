@@ -28,10 +28,10 @@ type FormData = z.infer<typeof formSchema>;
 
 interface FieldsManagerProps {
   initialFields: Field[];
-  onFormChange: (fields: Field[]) => void;
+  onFieldsChange: (fields: Field[]) => void;
 }
 
-const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFormChange }) => {
+const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }) => {
   const { control, watch, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: initialFields },
@@ -49,8 +49,8 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFormChange }) 
   const watchedFields = watch("fields");
 
   useEffect(() => {
-    onFormChange(watchedFields as Field[]);
-  }, [watchedFields, onFormChange]);
+    onFieldsChange(watchedFields as Field[]);
+  }, [watchedFields, onFieldsChange]);
   
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", sampleValue: "" });

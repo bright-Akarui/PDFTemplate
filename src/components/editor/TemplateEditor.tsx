@@ -118,7 +118,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           {/* Fields Manager */}
           <div className="row-span-1 lg:col-span-1 min-h-0">
             <div className="overflow-y-auto rounded-lg border bg-background h-full">
-              <FieldsManager initialFields={fields} onFormChange={handleFieldsChange} />
+              <FieldsManager initialFields={fields} onFieldsChange={handleFieldsChange} />
             </div>
           </div>
         </main>
