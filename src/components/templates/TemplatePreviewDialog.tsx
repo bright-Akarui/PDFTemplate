@@ -18,7 +18,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Printer } from "lucide-react"
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+
+interface TemplatePreviewDialogProps {
+    template: Template;
+    children: React.ReactNode;
+}
 
 const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>, fields: Field[]): string => {
   let populatedHtml = templateHtml;
@@ -52,8 +57,16 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
     <script>
       window.addEventListener('message', function(event) {
         if (event.data === 'print-template') {
-          window.focus();
-          window.print();
+          // Add a small delay to ensure focus is acquired, especially in Firefox
+          setTimeout(() => {
+            try {
+              window.focus();
+              window.print();
+            } catch(e) {
+              console.error("Print failed:", e);
+              // You could post a message back to the parent if you want to show an error
+            }
+          }, 50);
         }
       }, false);
     </script>
@@ -74,6 +87,7 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [currentHtml, setCurrentHtml] = useState(''); // State to hold the fetched raw HTML
   const [previewContent, setPreviewContent] = useState('Loading preview...');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -90,22 +104,22 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
             return res.text();
           })
           .then(html => {
-            setPreviewContent(generatePreviewHtml(html, formData, template.fields));
+            setCurrentHtml(html); // Store the raw HTML
           })
           .catch(err => {
             console.error(err);
-            setPreviewContent('<p>Error loading preview.</p>');
+            setCurrentHtml('<p>Error loading preview.</p>');
           });
       } else {
          // It's already full content (e.g., from editor unsaved state)
-         setPreviewContent(generatePreviewHtml(template.htmlContent, formData, template.fields));
+         setCurrentHtml(template.htmlContent);
       }
     }
-  }, [isDialogOpen, template, formData]);
+  }, [isDialogOpen, template.htmlContent]);
 
 
   useEffect(() => {
-    // Populate form data from sample values
+    // Populate form data from sample values when the template changes
     const newFormData: Record<string, any> = {};
     template.fields.forEach(field => {
         try {
@@ -123,27 +137,28 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   }, [template.fields]);
 
 
-  // Re-generate HTML when form data changes
+  // Re-generate HTML when form data or the raw HTML changes
   useEffect(() => {
-    // This effect now only runs if we already have the full HTML content
-    if (previewContent !== 'Loading preview...' && !template.htmlContent.startsWith('templates/')) {
-        setPreviewContent(generatePreviewHtml(template.htmlContent, formData, template.fields));
+    if (currentHtml) {
+        setPreviewContent(generatePreviewHtml(currentHtml, formData, template.fields));
     }
-  }, [formData, template.htmlContent, previewContent]);
+  }, [formData, currentHtml, template.fields]);
 
 
   const handleInputChange = (fieldName: string, value: string, type: string) => {
     setFormData((prev) => {
+      let newValue: any = value;
       if (type === 'table') {
         try {
           // Keep it as a valid JSON object while editing
-          return { ...prev, [fieldName]: JSON.parse(value) };
+          newValue = JSON.parse(value);
         } catch {
+          // If JSON is invalid, don't update the state to avoid breaking the preview
           console.warn("Invalid JSON in table field:", fieldName);
-          return prev;
+          return prev; 
         }
       }
-      return { ...prev, [fieldName]: value };
+      return { ...prev, [fieldName]: newValue };
     });
   };
 
@@ -207,7 +222,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                 srcDoc={previewContent}
                 title="Template Preview"
                 className="w-full h-full border-0 bg-white shadow-lg"
-                sandbox="allow-scripts allow-modals"
+                sandbox="allow-scripts allow-modals allow-same-origin"
               />
             </div>
           </div>

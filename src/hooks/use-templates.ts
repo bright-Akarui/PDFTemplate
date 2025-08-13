@@ -5,13 +5,13 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Template, Field } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 // Helper to add a unique ID to fields that don't have one
 const addIdToFields = (fields: Field[]): Field[] => {
   return fields.map((field, index) => ({
     ...field,
-    id: `f-${Date.now()}-${index}`, // Create a sufficiently unique ID
+    id: field.id || `f-${Date.now()}-${index}`, // Create a sufficiently unique ID
   }));
 };
 
@@ -91,7 +91,7 @@ export const useTemplates = () => {
         formData.append('name', templateData.name);
         
         // Convert fields to the expected format string, removing client-side id.
-        const apiFields = templateData.fields.map(f => ({ name: f.name, type: f.type === 'string' ? 'string' : f.type, sampleValue: f.sampleValue }));
+        const apiFields = templateData.fields.map(f => ({ name: f.name, type: f.type === 'string' ? 'text' : f.type, sampleValue: f.sampleValue }));
         formData.append('fields', JSON.stringify(apiFields));
         
         const htmlBlob = new Blob([templateData.htmlContent || ''], { type: 'text/html' });
