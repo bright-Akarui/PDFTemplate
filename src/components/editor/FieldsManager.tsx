@@ -12,14 +12,14 @@ import { Plus, Trash2, FileJson2 } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 const formSchema = z.object({
   fields: z.array(
     z.object({
       id: z.string(),
       name: z.string().min(1, "Name is required"),
-      sampleValue: z.string().min(1, "Sample value is required"),
+      sampleValue: z.string(),
     })
   ),
 });
@@ -32,7 +32,7 @@ interface FieldsManagerProps {
 }
 
 const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }) => {
-  const { control, watch, reset } = useForm<FormData>({
+  const { control, watch, reset, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: initialFields },
   });
@@ -47,9 +47,15 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
   }, [initialFields, reset]);
 
   const watchedFields = watch("fields");
+  const prevFieldsRef = useRef<string>();
 
   useEffect(() => {
-    onFieldsChange(watchedFields as Field[]);
+    const currentFieldsString = JSON.stringify(watchedFields);
+    // Only call the callback if the fields have actually changed.
+    if (prevFieldsRef.current !== currentFieldsString) {
+      onFieldsChange(watchedFields as Field[]);
+      prevFieldsRef.current = currentFieldsString;
+    }
   }, [watchedFields, onFieldsChange]);
   
   const addNewField = () => {
@@ -75,19 +81,20 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
                     <Trash2 className="w-4 h-4 text-destructive"/>
                 </Button>
                 <div>
-                    <Label>Field Name</Label>
+                    <Label htmlFor={`fields.${index}.name`}>Field Name</Label>
                     <Controller
                     name={`fields.${index}.name`}
                     control={control}
-                    render={({ field }) => <Input {...field} placeholder="e.g., customerName" />}
+                    render={({ field }) => <Input {...field} id={`fields.${index}.name`} placeholder="e.g., customerName" />}
                     />
+                    {errors.fields?.[index]?.name && <p className="text-destructive text-xs mt-1">{errors.fields[index]?.name?.message}</p>}
                 </div>
                 <div>
-                    <Label>Sample Value</Label>
+                    <Label htmlFor={`fields.${index}.sampleValue`}>Sample Value</Label>
                     <Controller
                         name={`fields.${index}.sampleValue`}
                         control={control}
-                        render={({ field }) => <Textarea {...field} placeholder='e.g., John Doe or [{"col": "value"}]' className="text-xs" rows={4} />}
+                        render={({ field }) => <Textarea {...field} id={`fields.${index}.sampleValue`} placeholder='e.g., John Doe or [{"col": "value"}]' className="text-xs" rows={4} />}
                     />
                 </div>
                 </div>

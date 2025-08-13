@@ -56,13 +56,11 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           variant: "default",
         });
 
-        // The hook now handles redirection for new templates.
-        // For existing templates, we might want to refresh.
-        if (!isNewTemplate) {
-            const newPath = `/editor/${templateToSave.id}`;
-            router.replace(newPath); // use replace to avoid back button issues
-            router.refresh();
+        if (isNewTemplate) {
+          router.push('/');
         }
+        router.refresh();
+
 
     } catch (error) {
         console.error("Save failed:", error);
