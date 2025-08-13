@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Template } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 const MOCK_TEMPLATES: Template[] = [
   {
@@ -107,6 +108,7 @@ const MOCK_TEMPLATES: Template[] = [
 const STORAGE_KEY = 'templateflow_templates';
 
 export const useTemplates = () => {
+  const router = useRouter();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -143,7 +145,46 @@ export const useTemplates = () => {
     return templates.find(t => t.id === id) || null;
   }, [templates]);
 
-  const saveTemplate = (templateData: Omit<Template, 'createdAt' | 'updatedAt'>) => {
+  const saveTemplate = async (templateData: Omit<Template, 'createdAt' | 'updatedAt'>, isNewTemplate: boolean) => {
+    if (isNewTemplate) {
+        const formData = new FormData();
+        formData.append('name', templateData.name);
+        
+        // Convert fields to the expected format string.
+        const apiFields = templateData.fields.map(f => ({ name: f.name, type: f.type, sampleValue: f.sampleValue }));
+        formData.append('fields', JSON.stringify(apiFields));
+        
+        const htmlBlob = new Blob([templateData.htmlContent || ''], { type: 'text/html' });
+        formData.append('htmlFile', htmlBlob, 'template.html');
+
+        try {
+            const response = await fetch('http://localhost:8080/api/v1/templates', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                },
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'API call failed');
+            }
+            
+            // On successful API call, we don't need to update local state or localStorage
+            // The user will be redirected and data should be re-fetched.
+            // But we might want to clear local storage if it's out of sync
+            router.push('/');
+            return; // Exit function after API call for new template
+
+        } catch (error) {
+            console.error('Failed to create template via API:', error);
+            // Optionally, show an error to the user
+            throw error; // re-throw to be caught by the component
+        }
+    }
+    
+    // ----- Logic for updating existing templates (keeps using localStorage) -----
     const now = new Date().toISOString();
     const existingIndex = templates.findIndex(t => t.id === templateData.id);
 
@@ -158,7 +199,8 @@ export const useTemplates = () => {
         return t;
       });
     } else {
-      // Add new
+        // This part should ideally not be reached if new templates are handled by API
+        // But as a fallback, we'll add it to local state.
       const newTemplate: Template = {
         ...templateData,
         createdAt: now,

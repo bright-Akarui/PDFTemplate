@@ -18,6 +18,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
   const router = useRouter();
   const { toast } = useToast();
   const { saveTemplate } = useTemplates();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [name, setName] = useState(initialData.name);
   const [fields, setFields] = useState<Field[]>(initialData.fields || []);
@@ -38,22 +39,36 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
     }
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const templateToSave = getCurrentTemplateState();
+    setIsSaving(true);
     
-    saveTemplate(templateToSave);
+    try {
+        await saveTemplate(templateToSave, isNewTemplate);
     
-    toast({
-      title: "Template Saved!",
-      description: `Template "${templateToSave.name}" has been successfully saved.`,
-      variant: "default",
-    });
+        toast({
+          title: "Template Saved!",
+          description: `Template "${templateToSave.name}" has been successfully processed.`,
+          variant: "default",
+        });
 
-    if (isNewTemplate) {
-        const newPath = `/editor/${templateToSave.id}`;
-        router.replace(newPath);
-    } else {
-        router.refresh();
+        // The hook now handles redirection for new templates.
+        // For existing templates, we might want to refresh.
+        if (!isNewTemplate) {
+            const newPath = `/editor/${templateToSave.id}`;
+            router.replace(newPath); // use replace to avoid back button issues
+            router.refresh();
+        }
+
+    } catch (error) {
+        console.error("Save failed:", error);
+        toast({
+            title: "Save Failed",
+            description: "Could not save the template. Please try again.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsSaving(false);
     }
   };
   
@@ -72,12 +87,15 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           </div>
           <div className="flex items-center gap-2">
             <TemplatePreviewDialog template={getCurrentTemplateState() as Template}>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" disabled={isSaving}>
                 <Eye className="mr-0 md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Preview</span>
               </Button>
             </TemplatePreviewDialog>
-            <Button onClick={handleSave} size="sm">
-              <Save className="mr-0 md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Save Template</span>
+            <Button onClick={handleSave} size="sm" disabled={isSaving}>
+              <Save className="mr-0 md:mr-2 h-4 w-4" /> 
+              <span className="hidden md:inline">
+                {isSaving ? 'Saving...' : 'Save Template'}
+              </span>
             </Button>
           </div>
         </header>
