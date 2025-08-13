@@ -29,6 +29,10 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
     setFields(initialData.fields || []);
     setHtmlContent(initialData.htmlContent || '');
   }, [initialData]);
+
+  const handleFieldsChange = useCallback((newFields: Field[]) => {
+    setFields(newFields);
+  }, []);
   
   const getCurrentTemplateState = (): Omit<Template, 'createdAt' | 'updatedAt'> => {
     return {
@@ -114,7 +118,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           {/* Fields Manager */}
           <div className="row-span-1 lg:col-span-1 min-h-0">
             <div className="overflow-y-auto rounded-lg border bg-background h-full">
-              <FieldsManager templateId={initialData.id} fields={fields} setFields={setFields} />
+              <FieldsManager initialFields={fields} onFormChange={handleFieldsChange} />
             </div>
           </div>
         </main>

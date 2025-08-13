@@ -12,7 +12,7 @@ import { Plus, Trash2, FileJson2 } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   fields: z.array(
@@ -32,7 +32,7 @@ interface FieldsManagerProps {
 }
 
 const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFormChange }) => {
-  const { control, handleSubmit, watch, getValues, reset } = useForm<FormData>({
+  const { control, watch, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: initialFields },
   });
