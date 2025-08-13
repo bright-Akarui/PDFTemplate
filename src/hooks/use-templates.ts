@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 // Helper to add a unique ID to fields that don't have one
-const addIdToFields = (fields: Field[]): Field[] => {
+const addIdToFields = (fields: any[]): Field[] => {
   return fields.map((field, index) => ({
     ...field,
     id: field.id || `f-${Date.now()}-${index}`, // Create a sufficiently unique ID
@@ -92,9 +92,7 @@ export const useTemplates = () => {
         
         // Convert fields to the expected format string, removing client-side id.
         const apiFields = templateData.fields.map(f => {
-            // The API expects "string", but the UI might use "text". This ensures consistency.
-            const fieldType = f.type === 'text' ? 'string' : f.type;
-            return { name: f.name, type: fieldType, sampleValue: f.sampleValue };
+            return { name: f.name, type: 'string', sampleValue: f.sampleValue };
         });
         formData.append('fields', JSON.stringify(apiFields));
         

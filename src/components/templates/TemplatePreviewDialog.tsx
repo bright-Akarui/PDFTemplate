@@ -39,7 +39,13 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
   // Handle table/range replacements
   const rangeRegex = /\{\{range \.([^\}]+)\}\}([\s\S]*?)\{\{end\}\}/g;
   populatedHtml = populatedHtml.replace(rangeRegex, (match, arrayName, content) => {
-      const items = formData[arrayName];
+      let items;
+      try {
+        items = typeof formData[arrayName] === 'string' ? JSON.parse(formData[arrayName]) : formData[arrayName];
+      } catch {
+        items = [];
+      }
+      
       if (!Array.isArray(items)) return '';
 
       return items.map(item => {
@@ -122,16 +128,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     // Populate form data from sample values when the template changes
     const newFormData: Record<string, any> = {};
     template.fields.forEach(field => {
-        try {
-            if (field.type === 'table') {
-                newFormData[field.name] = JSON.parse(field.sampleValue || '[]');
-            } else {
-                newFormData[field.name] = field.sampleValue;
-            }
-        } catch (e) {
-            console.error(`Error parsing sample value for ${field.name}:`, e);
-            newFormData[field.name] = field.type === 'table' ? [] : '';
-        }
+        newFormData[field.name] = field.sampleValue;
     });
     setFormData(newFormData);
   }, [template.fields]);
@@ -145,21 +142,8 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   }, [formData, currentHtml, template.fields]);
 
 
-  const handleInputChange = (fieldName: string, value: string, type: string) => {
-    setFormData((prev) => {
-      let newValue: any = value;
-      if (type === 'table') {
-        try {
-          // Keep it as a valid JSON object while editing
-          newValue = JSON.parse(value);
-        } catch {
-          // If JSON is invalid, don't update the state to avoid breaking the preview
-          console.warn("Invalid JSON in table field:", fieldName);
-          return prev; 
-        }
-      }
-      return { ...prev, [fieldName]: newValue };
-    });
+  const handleInputChange = (fieldName: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
   };
 
   const handlePrint = () => {
@@ -169,6 +153,11 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     }
   };
   
+  const isLikelyJson = (value: string) => {
+    const trimmed = value.trim();
+    return (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
+  }
+
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
@@ -188,24 +177,14 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
                   <Label htmlFor={field.name} className="capitalize">
                     {field.name.replace(/([A-Z])/g, ' $1')}
                   </Label>
-                  {field.type === 'table' ? (
-                    <Textarea
+                   <Textarea
                       id={field.name}
-                      defaultValue={typeof formData[field.name] === 'object' ? JSON.stringify(formData[field.name], null, 2) : String(formData[field.name] || '')}
-                      onBlur={(e) => handleInputChange(field.name, e.target.value, field.type)}
+                      value={formData[field.name] || ''}
+                      onChange={(e) => handleInputChange(field.name, e.target.value)}
                       placeholder={field.sampleValue}
                       className="text-xs font-mono"
-                      rows={5}
+                      rows={isLikelyJson(formData[field.name] || '') ? 5 : 2}
                     />
-                  ) : (
-                    <Input
-                      id={field.name}
-                      type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
-                      value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value, field.type)}
-                      placeholder={field.sampleValue}
-                    />
-                  )}
                 </div>
               ))}
               {template.fields.length === 0 && (

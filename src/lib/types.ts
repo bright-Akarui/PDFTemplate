@@ -2,7 +2,7 @@
 export interface Field {
   id?: string; // Made optional as API response doesn't always have it
   name: string;
-  type: 'text' | 'number' | 'date' | 'image' | 'table' | 'string'; // Added 'string' from API
+  // type is removed
   sampleValue: string;
 }
 

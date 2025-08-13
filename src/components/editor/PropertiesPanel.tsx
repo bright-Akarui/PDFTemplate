@@ -53,20 +53,8 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
   };
 
   const handleFieldLink = (fieldId: string) => {
-    const selectedField = fields.find(f => f.id === fieldId);
-    if (selectedField && element.type !== selectedField.type && !(element.type === 'image' && selectedField.type === 'text')) {
-      alert(`Cannot link a ${element.type} element to a ${selectedField.type} field.`);
-      return;
-    }
     onUpdate(element.id, { fieldId: fieldId === "none" ? undefined : fieldId });
   };
-  
-  const availableFields = fields.filter(field => {
-    if (element.type === 'text') return field.type === 'text' || field.type === 'number' || field.type === 'date';
-    if (element.type === 'image') return field.type === 'image' || field.type === 'text'; // Allow text for URLs
-    if (element.type === 'table') return field.type === 'table';
-    return false;
-  });
 
   return (
     <Card className="border-0 shadow-none">
@@ -86,12 +74,11 @@ const PropertiesPanel: FC<PropertiesPanelProps> = ({ element, fields, onUpdate, 
             <SelectTrigger><SelectValue placeholder="Link to a data field" /></SelectTrigger>
             <SelectContent>
                 <SelectItem value="none">None</SelectItem>
-                {availableFields.map(field => (
-                    <SelectItem key={field.id} value={field.id}>{field.name}</SelectItem>
+                {fields.map(field => (
+                    <SelectItem key={field.id} value={field.id!}>{field.name}</SelectItem>
                 ))}
             </SelectContent>
           </Select>
-          {availableFields.length === 0 && <p className="text-xs text-muted-foreground mt-1">No compatible fields of type '{element.type}' found.</p>}
         </div>
         
         {element.type === 'text' && !element.fieldId && (

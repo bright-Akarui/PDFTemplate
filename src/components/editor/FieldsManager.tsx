@@ -7,20 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2, FileJson2 } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 const formSchema = z.object({
   fields: z.array(
     z.object({
       id: z.string(),
       name: z.string().min(1, "Name is required"),
-      type: z.enum(["text", "number", "date", "image", "table"]),
       sampleValue: z.string().min(1, "Sample value is required"),
     })
   ),
@@ -29,12 +27,11 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 interface FieldsManagerProps {
-  templateId: string;
-  fields: Field[];
-  setFields: (fields: Field[]) => void;
+  initialFields: Field[];
+  onFormChange: (fields: Field[]) => void;
 }
 
-const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFields, setFields }) => {
+const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFormChange }) => {
   const { control, handleSubmit, watch, getValues, reset } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: initialFields },
@@ -47,25 +44,21 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
   
   useEffect(() => {
     reset({ fields: initialFields });
-  }, [templateId, initialFields, reset]);
+  }, [initialFields, reset]);
 
-  const handleFormChange = () => {
-    const currentFields = getValues().fields;
-    setFields(currentFields as Field[]);
-  };
+  const watchedFields = watch("fields");
 
+  useEffect(() => {
+    onFormChange(watchedFields as Field[]);
+  }, [watchedFields, onFormChange]);
+  
   const addNewField = () => {
-    append({ id: `f-${Date.now()}`, name: "", type: "text", sampleValue: "" });
-    // This is a workaround to ensure the state updates after appending
-    setTimeout(handleFormChange, 0);
+    append({ id: `f-${Date.now()}`, name: "", sampleValue: "" });
   };
   
   const removeField = (index: number) => {
     remove(index);
-    setTimeout(handleFormChange, 0);
   }
-
-  const watchedFields = watch("fields");
 
   return (
     <Card className="h-full">
@@ -74,7 +67,7 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
         <CardDescription>Define variables for your template.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onBlur={handleSubmit(handleFormChange)}>
+        <form>
             <div className="space-y-4">
             {fields.length > 0 ? fields.map((field, index) => (
                 <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">
@@ -90,41 +83,12 @@ const FieldsManager: FC<FieldsManagerProps> = ({ templateId, fields: initialFiel
                     />
                 </div>
                 <div>
-                    <Label>Field Type</Label>
-                    <Controller
-                        name={`fields.${index}.type`}
-                        control={control}
-                        render={({ field }) => (
-                        <Select onValueChange={(value) => {
-                            field.onChange(value);
-                        }} defaultValue={field.value}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="text">Text</SelectItem>
-                            <SelectItem value="number">Number</SelectItem>
-                            <SelectItem value="date">Date</SelectItem>
-                            <SelectItem value="image">Image URL</SelectItem>
-                            <SelectItem value="table">Table (Array)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        )}
-                    />
-                </div>
-                <div>
                     <Label>Sample Value</Label>
-                    { watchedFields[index]?.type === 'table' ? (
-                        <Controller
-                            name={`fields.${index}.sampleValue`}
-                            control={control}
-                            render={({ field }) => <Textarea {...field} placeholder='e.g., [{"col": "value"}]' className="text-xs" rows={4} />}
-                        />
-                    ) : (
-                        <Controller
+                    <Controller
                         name={`fields.${index}.sampleValue`}
                         control={control}
-                        render={({ field }) => <Input {...field} placeholder="e.g., John Doe" />}
-                        />
-                    )}
+                        render={({ field }) => <Textarea {...field} placeholder='e.g., John Doe or [{"col": "value"}]' className="text-xs" rows={4} />}
+                    />
                 </div>
                 </div>
             )) : (
