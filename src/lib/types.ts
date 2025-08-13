@@ -1,8 +1,8 @@
 
 export interface Field {
-  id: string;
+  id?: string; // Made optional as API response doesn't always have it
   name: string;
-  type: 'text' | 'number' | 'date' | 'image' | 'table';
+  type: 'text' | 'number' | 'date' | 'image' | 'table' | 'string'; // Added 'string' from API
   sampleValue: string;
 }
 
@@ -10,7 +10,7 @@ export interface Template {
   id: string;
   name: string;
   fields: Field[];
-  htmlContent?: string; // Stored for saving
+  htmlContent: string; // Will hold the actual HTML content, not the path
   createdAt: string;
   updatedAt: string;
 }

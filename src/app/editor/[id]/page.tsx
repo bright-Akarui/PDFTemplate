@@ -3,7 +3,7 @@
 
 import TemplateEditor from "@/components/editor/TemplateEditor";
 import { useTemplates } from "@/hooks/use-templates";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import type { Template } from "@/lib/types";
 import { useParams } from "next/navigation";
 
@@ -39,34 +39,48 @@ const defaultHtml = `<html>
   </body>
 </html>`;
 
-
 export default function EditorPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { getTemplate, isLoaded } = useTemplates();
-  
-  const template = useMemo(() => {
-    if (!isLoaded) return undefined;
-    if (id === 'new') {
-        // Return a new template structure for code-only editor
-        return {
-            id: `t-${Date.now()}`,
-            name: "New Code Template",
-            fields: [
-              { id: 'f1', name: 'title', type: 'text', sampleValue: 'Hello World' }
-            ],
-            htmlContent: defaultHtml,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        } as Template;
-    }
-    return getTemplate(id);
-  }, [id, getTemplate, isLoaded]);
+  const { getTemplate } = useTemplates();
+  const [template, setTemplate] = useState<Template | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isNew, setIsNew] = useState(false);
 
-  if (!isLoaded) {
+  useEffect(() => {
+    if (!id) return;
+
+    if (id === 'new') {
+      const newTemplate: Template = {
+        id: `t-${Date.now()}`,
+        name: "New Code Template",
+        fields: [
+          { id: 'f1', name: 'title', type: 'text', sampleValue: 'Hello World' }
+        ],
+        htmlContent: defaultHtml,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setTemplate(newTemplate);
+      setIsNew(true);
+      setIsLoading(false);
+    } else {
+      setIsNew(false);
+      setIsLoading(true);
+      getTemplate(id)
+        .then(data => {
+          setTemplate(data);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }
+  }, [id, getTemplate]);
+
+  if (isLoading) {
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Loading...</p>
+            <p>Loading Template...</p>
         </div>
     );
   }
@@ -80,6 +94,6 @@ export default function EditorPage() {
   }
 
   return (
-      <TemplateEditor initialData={template} isNewTemplate={id === 'new'} />
+      <TemplateEditor initialData={template} isNewTemplate={isNew} />
   )
 }

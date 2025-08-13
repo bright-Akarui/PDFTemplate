@@ -18,10 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Printer } from "lucide-react"
 
-interface TemplatePreviewDialogProps {
-  template: Template
-  children: React.ReactNode
-}
+const API_BASE_URL = 'http://localhost:8080';
 
 const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>, fields: Field[]): string => {
   let populatedHtml = templateHtml;
@@ -77,7 +74,35 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
 export function TemplatePreviewDialog({ template, children }: TemplatePreviewDialogProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [previewContent, setPreviewContent] = useState('');
+  const [previewContent, setPreviewContent] = useState('Loading preview...');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Effect to fetch full HTML content when dialog opens
+  useEffect(() => {
+    if (isDialogOpen) {
+      // API returns a path like "templates/id/template.html"
+      // Check if htmlContent is a path or actual content
+      if (template.htmlContent && template.htmlContent.startsWith('templates/')) {
+        setPreviewContent('Loading preview...'); // Reset while fetching
+        fetch(`${API_BASE_URL}/${template.htmlContent}`)
+          .then(res => {
+            if (!res.ok) throw new Error('Could not load template content');
+            return res.text();
+          })
+          .then(html => {
+            setPreviewContent(generatePreviewHtml(html, formData, template.fields));
+          })
+          .catch(err => {
+            console.error(err);
+            setPreviewContent('<p>Error loading preview.</p>');
+          });
+      } else {
+         // It's already full content (e.g., from editor unsaved state)
+         setPreviewContent(generatePreviewHtml(template.htmlContent, formData, template.fields));
+      }
+    }
+  }, [isDialogOpen, template, formData]);
+
 
   useEffect(() => {
     // Populate form data from sample values
@@ -98,16 +123,13 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   }, [template.fields]);
 
 
+  // Re-generate HTML when form data changes
   useEffect(() => {
-    // Generate the final HTML for the preview
-    if (!template.htmlContent) {
-      setPreviewContent('');
-      return;
+    // This effect now only runs if we already have the full HTML content
+    if (previewContent !== 'Loading preview...' && !template.htmlContent.startsWith('templates/')) {
+        setPreviewContent(generatePreviewHtml(template.htmlContent, formData, template.fields));
     }
-    
-    setPreviewContent(generatePreviewHtml(template.htmlContent, formData, template.fields));
-
-  }, [template.htmlContent, formData, template.fields]);
+  }, [formData, template.htmlContent, previewContent]);
 
 
   const handleInputChange = (fieldName: string, value: string, type: string) => {
@@ -117,9 +139,6 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
           // Keep it as a valid JSON object while editing
           return { ...prev, [fieldName]: JSON.parse(value) };
         } catch {
-          // If JSON is invalid during typing, we can't update the preview correctly.
-          // You might want to show an error to the user.
-          // For now, we'll just not update the state for invalid JSON.
           console.warn("Invalid JSON in table field:", fieldName);
           return prev;
         }
@@ -136,7 +155,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   };
   
   return (
-    <Dialog>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
         <DialogHeader>
@@ -150,7 +169,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
             <h3 className="font-semibold mb-4 text-primary">Dynamic Fields</h3>
             <div className="space-y-4">
               {template.fields.map((field) => (
-                <div key={field.id} className="space-y-2">
+                <div key={field.id || field.name} className="space-y-2">
                   <Label htmlFor={field.name} className="capitalize">
                     {field.name.replace(/([A-Z])/g, ' $1')}
                   </Label>
