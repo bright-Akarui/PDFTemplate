@@ -20,11 +20,6 @@ import { Printer } from "lucide-react"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
-interface TemplatePreviewDialogProps {
-    template: Template;
-    children: React.ReactNode;
-}
-
 const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>, fields: Field[]): string => {
   let populatedHtml = templateHtml;
 
@@ -41,8 +36,11 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
   populatedHtml = populatedHtml.replace(rangeRegex, (match, arrayName, content) => {
       let items;
       try {
-        items = typeof formData[arrayName] === 'string' ? JSON.parse(formData[arrayName]) : formData[arrayName];
+        // The form data for an array field will be a string, so we must parse it.
+        const rawValue = formData[arrayName];
+        items = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
       } catch {
+        // If parsing fails, default to an empty array so the preview doesn't break.
         items = [];
       }
       
@@ -50,6 +48,7 @@ const generatePreviewHtml = (templateHtml: string, formData: Record<string, any>
 
       return items.map(item => {
           let itemContent = content;
+          // Replace placeholders within the loop content (e.g., {{.Name}})
           Object.keys(item).forEach(key => {
               const itemRegex = new RegExp(`\\{\\{\\.${key}\\}\\}`, 'g');
               itemContent = itemContent.replace(itemRegex, item[key]);
@@ -154,6 +153,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
   };
   
   const isLikelyJson = (value: string) => {
+    if (typeof value !== 'string') return false;
     const trimmed = value.trim();
     return (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
   }
