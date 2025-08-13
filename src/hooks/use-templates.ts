@@ -91,7 +91,11 @@ export const useTemplates = () => {
         formData.append('name', templateData.name);
         
         // Convert fields to the expected format string, removing client-side id.
-        const apiFields = templateData.fields.map(f => ({ name: f.name, type: f.type === 'string' ? 'text' : f.type, sampleValue: f.sampleValue }));
+        const apiFields = templateData.fields.map(f => {
+            // The API expects "string", but the UI might use "text". This ensures consistency.
+            const fieldType = f.type === 'text' ? 'string' : f.type;
+            return { name: f.name, type: fieldType, sampleValue: f.sampleValue };
+        });
         formData.append('fields', JSON.stringify(apiFields));
         
         const htmlBlob = new Blob([templateData.htmlContent || ''], { type: 'text/html' });
@@ -101,6 +105,7 @@ export const useTemplates = () => {
             const response = await fetch(`${API_BASE_URL}/api/v1/templates`, {
                 method: 'POST',
                 headers: {
+                    // Content-Type is set automatically by the browser when using FormData
                     'accept': 'application/json',
                 },
                 body: formData,
