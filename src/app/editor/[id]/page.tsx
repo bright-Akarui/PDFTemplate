@@ -2,7 +2,7 @@
 "use client";
 
 import TemplateEditor from "@/components/editor/TemplateEditor";
-import { useTemplateEditor, useTemplates } from "@/hooks/use-templates";
+import { useTemplateEditor } from "@/hooks/use-template-editor";
 import { useEffect, useState } from "react";
 import type { Template } from "@/lib/types";
 import { useParams } from "next/navigation";

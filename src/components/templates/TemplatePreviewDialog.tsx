@@ -107,7 +107,9 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
       // Check if htmlContent is a path or actual content
       if (template.htmlContent && template.htmlContent.startsWith('templates/')) {
         setPreviewContent('Loading preview...'); // Reset while fetching
-        fetch(`${API_BASE_URL}/${template.htmlContent}`)
+        // Cache-busting: Append updatedAt timestamp to the URL
+        const cacheBustingUrl = `${API_BASE_URL}/${template.htmlContent}?v=${new Date(template.updatedAt).getTime()}`;
+        fetch(cacheBustingUrl)
           .then(res => {
             if (!res.ok) throw new Error('Could not load template content');
             return res.text();
@@ -124,7 +126,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
          setCurrentHtml(template.htmlContent);
       }
     }
-  }, [isDialogOpen, template.htmlContent]);
+  }, [isDialogOpen, template.htmlContent, template.updatedAt]);
 
 
   useEffect(() => {
@@ -160,7 +162,7 @@ export function TemplatePreviewDialog({ template, children }: TemplatePreviewDia
     if (typeof value !== 'string') return false;
     const trimmed = value.trim();
     return (trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'));
-  }
+  };
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
