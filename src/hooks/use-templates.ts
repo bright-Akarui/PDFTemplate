@@ -86,47 +86,53 @@ export const useTemplates = () => {
 
 
   const saveTemplate = async (templateData: Omit<Template, 'createdAt' | 'updatedAt'>, isNewTemplate: boolean) => {
-    if (isNewTemplate) {
-        const formData = new FormData();
-        formData.append('name', templateData.name);
-        
-        // Convert fields to the expected format string, removing client-side id.
-        const apiFields = templateData.fields.map(f => {
-            // Ensure type is always 'string' as per new simplified requirement
-            return { name: f.name, type: 'string', sampleValue: f.sampleValue };
-        });
-        formData.append('fields', JSON.stringify(apiFields));
-        
-        const htmlBlob = new Blob([templateData.htmlContent || ''], { type: 'text/html' });
-        formData.append('htmlFile', htmlBlob, 'template.html');
-
-        try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/templates/create`, {
-                method: 'POST',
-                headers: {
-                    // Content-Type is set automatically by the browser when using FormData
-                    'accept': 'application/json',
-                },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'API call failed');
-            }
-            
-            router.push('/');
-            router.refresh(); // Force a refresh to get the new list
-            return;
-
-        } catch (error) {
-            console.error('Failed to create template via API:', error);
-            throw error;
-        }
-    }
+    const formData = new FormData();
+    formData.append('name', templateData.name);
     
-    // TODO: Implement update logic (PUT /api/v1/templates/:id)
-    console.warn("Update functionality is not yet implemented with the API.");
+    // Convert fields to the expected format string, removing client-side id.
+    const apiFields = templateData.fields.map(f => ({
+        name: f.name,
+        type: 'string', // API expects a type property.
+        sampleValue: f.sampleValue
+    }));
+    formData.append('fields', JSON.stringify(apiFields));
+    
+    const htmlBlob = new Blob([templateData.htmlContent || ''], { type: 'text/html' });
+    formData.append('htmlFile', htmlBlob, 'template.html');
+
+    const url = isNewTemplate
+      ? `${API_BASE_URL}/api/v1/templates/create`
+      : `${API_BASE_URL}/api/v1/templates/${templateData.id}`;
+    
+    const method = isNewTemplate ? 'POST' : 'PUT';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                // Content-Type is set automatically by the browser when using FormData
+                'accept': 'application/json',
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'API call failed');
+        }
+        
+        // After a successful save, redirect or refresh
+        if (isNewTemplate) {
+          router.push('/');
+        }
+        router.refresh(); // Refresh data on the current page for updates
+        
+        return await response.json();
+
+    } catch (error) {
+        console.error(`Failed to ${isNewTemplate ? 'create' : 'update'} template via API:`, error);
+        throw error;
+    }
   };
 
   const deleteTemplate = (id: string) => {
