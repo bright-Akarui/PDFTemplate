@@ -12,7 +12,7 @@ import { Plus, Trash2, FileJson2 } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 
 const formSchema = z.object({
   fields: z.array(
@@ -32,7 +32,7 @@ interface FieldsManagerProps {
 }
 
 const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }) => {
-  const { control, watch, reset, formState: { errors } } = useForm<FormData>({
+  const { control, handleSubmit, reset, getValues } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: { fields: initialFields },
   });
@@ -46,24 +46,20 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
     reset({ fields: initialFields });
   }, [initialFields, reset]);
 
-  const watchedFields = watch("fields");
-  const prevFieldsRef = useRef<string>();
-
-  useEffect(() => {
-    const currentFieldsString = JSON.stringify(watchedFields);
-    // Only call the callback if the fields have actually changed.
-    if (prevFieldsRef.current !== currentFieldsString) {
-      onFieldsChange(watchedFields as Field[]);
-      prevFieldsRef.current = currentFieldsString;
-    }
-  }, [watchedFields, onFieldsChange]);
+  const handleFormChange = () => {
+    onFieldsChange(getValues().fields);
+  };
   
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", sampleValue: "" });
+    // This is a workaround to ensure the parent state is updated immediately after append
+    setTimeout(() => handleFormChange(), 0);
   };
   
   const removeField = (index: number) => {
     remove(index);
+     // This is a workaround to ensure the parent state is updated immediately after remove
+    setTimeout(() => handleFormChange(), 0);
   }
 
   return (
@@ -73,7 +69,7 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
         <CardDescription>Define variables for your template.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
+        <form onChange={handleFormChange}>
             <div className="space-y-4">
             {fields.length > 0 ? fields.map((field, index) => (
                 <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">
@@ -83,11 +79,15 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
                 <div>
                     <Label htmlFor={`fields.${index}.name`}>Field Name</Label>
                     <Controller
-                    name={`fields.${index}.name`}
-                    control={control}
-                    render={({ field }) => <Input {...field} id={`fields.${index}.name`} placeholder="e.g., customerName" />}
+                        name={`fields.${index}.name`}
+                        control={control}
+                        render={({ field, fieldState }) => (
+                            <>
+                                <Input {...field} id={`fields.${index}.name`} placeholder="e.g., customerName" />
+                                {fieldState.error && <p className="text-destructive text-xs mt-1">{fieldState.error.message}</p>}
+                            </>
+                        )}
                     />
-                    {errors.fields?.[index]?.name && <p className="text-destructive text-xs mt-1">{errors.fields[index]?.name?.message}</p>}
                 </div>
                 <div>
                     <Label htmlFor={`fields.${index}.sampleValue`}>Sample Value</Label>
