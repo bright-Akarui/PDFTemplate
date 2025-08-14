@@ -44,11 +44,7 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
   }
 
   const handleSave = async () => {
-    const templateToSave = {
-      ...getCurrentTemplateState(),
-       // The API expects 'type' but we don't use it in the UI. Add it back here.
-      fields: fields.map(f => ({ ...f, type: 'string' }))
-    };
+    const templateToSave = getCurrentTemplateState();
     
     setIsSaving(true);
     

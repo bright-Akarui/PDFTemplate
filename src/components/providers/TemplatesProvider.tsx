@@ -63,11 +63,11 @@ export const TemplatesProvider = ({ children }: { children: ReactNode }) => {
     const formData = new FormData();
     formData.append('name', templateData.name);
     
-    const apiFields = templateData.fields.map(f => ({
-        name: f.name,
-        type: 'string', 
-        sampleValue: f.sampleValue
+    const apiFields = templateData.fields.map(({ id, ...rest }) => ({
+        ...rest,
+        type: 'string' // Ensure type is always string as per requirement
     }));
+
     formData.append('fields', JSON.stringify(apiFields));
     
     const htmlBlob = new Blob([templateData.htmlContent || ''], { type: 'text/html' });
