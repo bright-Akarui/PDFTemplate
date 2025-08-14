@@ -46,20 +46,20 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
     reset({ fields: initialFields });
   }, [initialFields, reset]);
 
-  const handleFormChange = () => {
+  const handleBlur = () => {
     onFieldsChange(getValues().fields);
   };
   
   const addNewField = () => {
     append({ id: `f-${Date.now()}`, name: "", sampleValue: "" });
     // This is a workaround to ensure the parent state is updated immediately after append
-    setTimeout(() => handleFormChange(), 0);
+    setTimeout(() => onFieldsChange(getValues().fields), 0);
   };
   
   const removeField = (index: number) => {
     remove(index);
      // This is a workaround to ensure the parent state is updated immediately after remove
-    setTimeout(() => handleFormChange(), 0);
+    setTimeout(() => onFieldsChange(getValues().fields), 0);
   }
 
   return (
@@ -69,7 +69,7 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
         <CardDescription>Define variables for your template.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onChange={handleFormChange}>
+        <form>
             <div className="space-y-4">
             {fields.length > 0 ? fields.map((field, index) => (
                 <div key={field.id} className="p-3 border rounded-lg space-y-3 relative bg-secondary/30">
@@ -81,9 +81,17 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
                     <Controller
                         name={`fields.${index}.name`}
                         control={control}
-                        render={({ field, fieldState }) => (
+                        render={({ field: controllerField, fieldState }) => (
                             <>
-                                <Input {...field} id={`fields.${index}.name`} placeholder="e.g., customerName" />
+                                <Input 
+                                    {...controllerField} 
+                                    onBlur={() => {
+                                        controllerField.onBlur(); // Call original onBlur
+                                        handleBlur();      // Call our custom handler
+                                    }}
+                                    id={`fields.${index}.name`} 
+                                    placeholder="e.g., customerName" 
+                                />
                                 {fieldState.error && <p className="text-destructive text-xs mt-1">{fieldState.error.message}</p>}
                             </>
                         )}
@@ -94,7 +102,18 @@ const FieldsManager: FC<FieldsManagerProps> = ({ initialFields, onFieldsChange }
                     <Controller
                         name={`fields.${index}.sampleValue`}
                         control={control}
-                        render={({ field }) => <Textarea {...field} id={`fields.${index}.sampleValue`} placeholder='e.g., John Doe or [{"col": "value"}]' className="text-xs" rows={4} />}
+                        render={({ field: controllerField }) => 
+                            <Textarea 
+                                {...controllerField} 
+                                onBlur={() => {
+                                    controllerField.onBlur();
+                                    handleBlur();
+                                }}
+                                id={`fields.${index}.sampleValue`} 
+                                placeholder='e.g., John Doe or [{"col": "value"}]' 
+                                className="text-xs" 
+                                rows={4} 
+                            />}
                     />
                 </div>
                 </div>
