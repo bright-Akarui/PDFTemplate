@@ -2,7 +2,7 @@
 "use client";
 
 import TemplateEditor from "@/components/editor/TemplateEditor";
-import { useTemplates } from "@/hooks/use-templates";
+import { useTemplateEditor, useTemplates } from "@/hooks/use-templates";
 import { useEffect, useState } from "react";
 import type { Template } from "@/lib/types";
 import { useParams } from "next/navigation";
@@ -42,14 +42,10 @@ const defaultHtml = `<html>
 export default function EditorPage() {
   const params = useParams();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { getTemplate } = useTemplates();
+  const { template: fetchedTemplate, isLoading } = useTemplateEditor(id !== 'new' ? id : null);
   const [template, setTemplate] = useState<Template | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isNew, setIsNew] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
-
     if (id === 'new') {
       const newTemplate: Template = {
         id: `t-${Date.now()}`,
@@ -62,22 +58,12 @@ export default function EditorPage() {
         updatedAt: new Date().toISOString(),
       };
       setTemplate(newTemplate);
-      setIsNew(true);
-      setIsLoading(false);
-    } else {
-      setIsNew(false);
-      setIsLoading(true);
-      getTemplate(id)
-        .then(data => {
-          setTemplate(data);
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+    } else if (fetchedTemplate) {
+      setTemplate(fetchedTemplate);
     }
-  }, [id, getTemplate]);
+  }, [id, fetchedTemplate]);
 
-  if (isLoading) {
+  if (isLoading && id !== 'new') {
     return (
         <div className="flex h-screen items-center justify-center">
             <p>Loading Template...</p>
@@ -86,14 +72,15 @@ export default function EditorPage() {
   }
 
   if (!template) {
+    // This can be a loading state for a new template or a not found state for an existing one.
     return (
         <div className="flex h-screen items-center justify-center">
-            <p>Template not found.</p>
+             <p>{id !== 'new' ? "Template not found." : "Loading..."}</p>
         </div>
     );
   }
 
   return (
-      <TemplateEditor initialData={template} isNewTemplate={isNew} />
+      <TemplateEditor initialData={template} isNewTemplate={id === 'new'} />
   )
 }

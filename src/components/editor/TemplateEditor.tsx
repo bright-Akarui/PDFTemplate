@@ -44,7 +44,12 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
   }
 
   const handleSave = async () => {
-    const templateToSave = getCurrentTemplateState();
+    const templateToSave = {
+      ...getCurrentTemplateState(),
+       // The API expects 'type' but we don't use it in the UI. Add it back here.
+      fields: fields.map(f => ({ ...f, type: 'string' }))
+    };
+    
     setIsSaving(true);
     
     try {
@@ -56,11 +61,12 @@ const TemplateEditor: FC<{ initialData: Template; isNewTemplate: boolean; }> = (
           variant: "default",
         });
 
+        // The hook now handles redirection
         if (isNewTemplate) {
-          router.push('/');
+            router.push('/');
+        } else {
+            router.refresh();
         }
-        router.refresh();
-
 
     } catch (error) {
         console.error("Save failed:", error);

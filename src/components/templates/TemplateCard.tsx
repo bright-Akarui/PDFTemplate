@@ -10,16 +10,36 @@ import { Edit, Eye, MoreVertical, Trash2 } from "lucide-react";
 import type { Template } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
+import { useTemplates } from "@/hooks/use-templates";
+import { useToast } from "@/hooks/use-toast";
+
 
 interface TemplateCardProps {
   template: Template;
-  onDelete: (id: string) => void;
 }
 
-const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
+const TemplateCard: FC<TemplateCardProps> = ({ template }) => {
+  const { deleteTemplate } = useTemplates();
+  const { toast } = useToast();
   const lastUpdated = new Date(template.updatedAt).toLocaleDateString();
   const editUrl = `/editor/${template.id}`;
 
+  const handleDelete = async () => {
+    try {
+      await deleteTemplate(template.id);
+      toast({
+        title: "Template Deleted",
+        description: `Template "${template.name}" has been deleted.`,
+        variant: "default",
+      });
+    } catch (error) {
+       toast({
+        title: "Deletion Failed",
+        description: "Could not delete the template. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }
 
   return (
     <Card className="flex flex-col transition-shadow duration-300 hover:shadow-lg">
@@ -41,7 +61,7 @@ const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
                   </Link>
                 </DropdownMenuItem>
                 <AlertDialogTrigger asChild>
-                   <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                   <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                    </DropdownMenuItem>
@@ -80,7 +100,7 @@ const TemplateCard: FC<TemplateCardProps> = ({ template, onDelete }) => {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(template.id)} className="bg-destructive hover:bg-destructive/90">
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>

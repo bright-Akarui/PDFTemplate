@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button";
 import { FileText, PlusSquare } from "lucide-react";
 import TemplateCard from "./TemplateCard";
 import { useTemplates } from "@/hooks/use-templates";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const TemplateListPage: FC = () => {
-  const { templates, deleteTemplate } = useTemplates();
+  const { templates, isLoaded } = useTemplates();
 
   return (
       <div className="container mx-auto py-8">
@@ -23,13 +24,24 @@ const TemplateListPage: FC = () => {
         </header>
 
         <main>
-          {templates.length > 0 ? (
+          {!isLoaded ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex flex-col space-y-3">
+                  <Skeleton className="h-[125px] w-full rounded-xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : templates.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {templates.map((template) => (
                 <TemplateCard
                   key={template.id}
                   template={template}
-                  onDelete={deleteTemplate}
                 />
               ))}
             </div>
