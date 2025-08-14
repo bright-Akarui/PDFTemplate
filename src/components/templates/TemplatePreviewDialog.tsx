@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, ReactNode } from "react"
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,10 @@ import type { Template, Field } from "@/lib/types"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Printer } from "lucide-react"
+interface TemplatePreviewDialogProps {
+  template: Template;
+  children: ReactNode;
+}
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 

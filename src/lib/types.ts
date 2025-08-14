@@ -2,6 +2,7 @@
 export interface Field {
   id?: string; // Made optional as API response doesn't always have it
   name: string;
+  type: string
   sampleValue: string;
 }
 

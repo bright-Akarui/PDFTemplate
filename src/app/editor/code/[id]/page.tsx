@@ -41,7 +41,7 @@ const defaultHtml = `<html>
 
 export default function CodeEditorPage() {
   const params = useParams();
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  let id = Array.isArray(params.id) ? params.id[0] : params.id;
   const { getTemplate, isLoaded } = useTemplates();
   
   const template = useMemo(() => {
@@ -60,7 +60,7 @@ export default function CodeEditorPage() {
             updatedAt: new Date().toISOString(),
         } as Template;
     }
-    return getTemplate(id);
+    return getTemplate(id!);
   }, [id, getTemplate, isLoaded]);
 
   if (!isLoaded) {

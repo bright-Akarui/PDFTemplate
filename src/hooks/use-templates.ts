@@ -101,7 +101,7 @@ export const useTemplates = () => {
         formData.append('htmlFile', htmlBlob, 'template.html');
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/v1/templates`, {
+            const response = await fetch(`${API_BASE_URL}/api/v1/templates/create`, {
                 method: 'POST',
                 headers: {
                     // Content-Type is set automatically by the browser when using FormData
